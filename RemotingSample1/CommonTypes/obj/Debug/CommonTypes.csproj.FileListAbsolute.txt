@@ -1,0 +1,16 @@
+Z:\Downloads\RemotingSample1\CommonTypes\bin\Debug\CommonTypes.dll
+Z:\Downloads\RemotingSample1\CommonTypes\bin\Debug\CommonTypes.pdb
+Z:\Downloads\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csproj.CoreCompileInputs.cache
+Z:\Downloads\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.dll
+Z:\Downloads\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.pdb
+Z:\Downloads\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csprojAssemblyReference.cache
+C:\Users\gonca\Desktop\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csprojAssemblyReference.cache
+C:\Users\gonca\Desktop\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csproj.CoreCompileInputs.cache
+C:\Users\gonca\Desktop\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.dll
+C:\Users\gonca\Desktop\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.pdb
+D:\padi\RemotingSample1\CommonTypes\bin\Debug\CommonTypes.dll
+D:\padi\RemotingSample1\CommonTypes\bin\Debug\CommonTypes.pdb
+D:\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csprojAssemblyReference.cache
+D:\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csproj.CoreCompileInputs.cache
+D:\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.dll
+D:\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.pdb
