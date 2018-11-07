@@ -11,30 +11,19 @@ namespace RemotingSample {
     class Client
     {
 
-        public static void exit()
-        {
-            Console.WriteLine("Exiting");
-        }
-
         static void Main()
         {
 
 
             TcpChannel channel = new TcpChannel();
             ChannelServices.RegisterChannel(channel, true);
-            //List<string> splited;
             List<List<Field>> lField;
-
-
             MyRemoteObject obj = (MyRemoteObject)Activator.GetObject(
                 typeof(MyRemoteObject),
                 "tcp://localhost:8086/MyRemoteObjectName");
 
             try
             {
-                //Console.WriteLine(obj.MetodoOla());
-
-
                 while (true)
                 {
                     Console.WriteLine("Write a command add/take/read <field1,field2,...,fieldn>  (exit:to leave) :");
@@ -46,14 +35,13 @@ namespace RemotingSample {
                     string str_fields = cmd_params[1].Substring(1, cmd_params[1].Length - 1);
                     // wilcardValue
                     int wildValue = 0;
-                    // get the array of fields
+                    // get the list of fields
                     List<string> field_list = argumentParser(str_fields, ref wildValue);
                     bool endProcessCommand = false;
 
                     switch (cmd)
                     {
                         case "add":
-
                             obj.add(field_list);
                             break;
                         case "read":
@@ -77,16 +65,13 @@ namespace RemotingSample {
                         default: Console.WriteLine("Invalid Command : {0}. Please,use the correct command syntax.", cmd); break;
                     }
                     if (endProcessCommand)
-                        exit();
+                        break;
                 }
-
-
             }
             catch (SocketException)
             {
                 System.Console.WriteLine("Could not locate server");
             }
-
         }
         static List<string> argumentParser(string fields, ref int wilcardFounded)
         {
@@ -101,7 +86,6 @@ namespace RemotingSample {
                 {
                     //Console.WriteLine(cur_field);
                     argsList.Add(cur_field);
-
 
                     cur_field = "";
                 }
