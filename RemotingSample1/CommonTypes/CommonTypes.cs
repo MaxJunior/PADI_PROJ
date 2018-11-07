@@ -98,8 +98,9 @@ namespace RemotingSample
             string[] splited;
             List<Field> aux = new List<Field>();
             List<List<Field>> aux2 = new List<List<Field>>();
+            int founded = 0;
 
-
+            
             if (!first.Contains("("))
                 key = first;
             else
@@ -110,9 +111,13 @@ namespace RemotingSample
 
             foreach (string s in l)
             {
-                if (!s.Contains("("))
+                if (!s.Contains("(") && !s.Equals("null"))
                 {
                     aux.Add(new Field(s));
+                }
+                else if (s.Equals("null"))
+                {
+                    aux.Add(new Field(s,2));
                 }
                 else
                 {
@@ -143,8 +148,8 @@ namespace RemotingSample
                     }
                 }
             }
+            
 
-            while (!tupleSpace.ContainsKey(key)) { continue; }
             foreach (List<Field> ls in tupleSpace[key])
             {
                 if (!(ls.Count == l.Count))
@@ -152,18 +157,20 @@ namespace RemotingSample
                 bool eq=true;
                 for (int i = 0; i < ls.Count; i++)
                 {
-
-                    if (aux[i].getTN() != ls[i].getTN())
+                    if (aux[i].getTN() != ls[i].getTN() && aux[i].getType() != 2)
                     {
                         eq = false;
                         break;
                     }
 
-
-                    if (aux[i].getTN() == 0 && ls[i].getTN() == 0)
+                    if (aux[i].getType() == 2 && ls[i].getType() == 0)
+                        continue;
+                    if (aux[i].getType() == 1 && ls[i].getType()==1)
                     {
                         if (aux[i].getString().Equals("*"))
+                        {
                             continue;
+                        }
                         else if (aux[i].getString().Contains("*"))
                         {
                             String[] sTest = aux[i].getString().Split('*');
@@ -176,9 +183,9 @@ namespace RemotingSample
                             }
                         }
                     } 
-                    else if(aux[i].getTN() != 0)
+                    else if(aux[i].getTN() != 0 )
                     {
-                        if (aux[i].Equals("null") && ls[i].getTN() != 0)
+                        if (aux[i].getType()==2 && ls[i].getTN() != 0)
                             continue;
                         else if (ls[i].GetType().Equals(aux[i]))
                             continue;
@@ -192,7 +199,10 @@ namespace RemotingSample
                         
                 }
                 if (eq)
+                {
                     aux2.Add(ls);
+                    founded = 1;
+                }
             }
             return aux2;
         }
@@ -217,9 +227,13 @@ namespace RemotingSample
 
             foreach (string s in l)
             {
-                if (!s.Contains("("))
+                if (!s.Contains("(") && !s.Equals("null"))
                 {
                     aux.Add(new Field(s));
+                }
+                else if (s.Equals("null"))
+                {
+                    aux.Add(new Field(s, 2));
                 }
                 else
                 {
@@ -253,28 +267,30 @@ namespace RemotingSample
 
             foreach (List<Field> ls in tupleSpace[key])
             {
-                int i=0;
                 if (!(ls.Count == l.Count))
                     continue;
                 bool eq = true;
-                for (i = 0; i < ls.Count; i++)
+                int j=0;
+                for (int i=0; i < ls.Count; i++)
                 {
-
-                    if (aux[i].getTN() != ls[i].getTN())
+                    if (aux[i].getTN() != ls[i].getTN() && aux[i].getType() != 2)
                     {
                         eq = false;
                         break;
                     }
 
-
-                    if (aux[i].getTN() == 0 && ls[i].getTN() == 0)
+                    if (aux[i].getType() == 2 && ls[i].getType() == 0)
+                        continue;
+                    if (aux[i].getType() == 1 && ls[i].getType() == 1)
                     {
-                        if (aux[i].getString().Equals('*'))
+                        if (aux[i].getString().Equals("*"))
+                        {
                             continue;
+                        }
                         else if (aux[i].getString().Contains("*"))
                         {
                             String[] sTest = aux[i].getString().Split('*');
-                            if (sTest[0].Equals(ls[i]))
+                            if (sTest[0].Equals(ls[i].getString()))
                                 continue;
                             else
                             {
@@ -285,7 +301,7 @@ namespace RemotingSample
                     }
                     else if (aux[i].getTN() != 0)
                     {
-                        if (aux[i].Equals("null") && ls[i].getTN() != 0)
+                        if (aux[i].getType() == 2 && ls[i].getTN() != 0)
                             continue;
                         else if (ls[i].GetType().Equals(aux[i]))
                             continue;
@@ -300,9 +316,10 @@ namespace RemotingSample
                 }
                 if (eq)
                 {
-                    tupleSpace[key].RemoveAt(i);
+                    tupleSpace[key].RemoveAt(j);
                     aux2.Add(ls);
                 }
+                j++;
             }
             return aux2;
 
@@ -310,7 +327,7 @@ namespace RemotingSample
 
     }
 
-    public class Test { }
+    public class Test : MarshalByRefObject { }
 
     public class DADTestA : Test
         {
@@ -398,6 +415,11 @@ namespace RemotingSample
             type = 1;
             s = s2;
         }
+        public Field(string s2,int i)
+        {
+            type = i;
+            s = s2;
+        }
         public Field(Test t, int t2)
         {
             test = t;
@@ -417,6 +439,10 @@ namespace RemotingSample
         public int getTN()
         {
             return tN;
+        }
+        public int getType()
+        {
+            return type;
         }
 
         public bool equals(Field f)

@@ -32,16 +32,19 @@ namespace RemotingSample {
                     // get the command
                     string cmd = cmd_params[0];
                     // given string : <field1,...,fieldN> get  just field1,...,fieldN
-                    string str_fields = cmd_params[1].Substring(1, cmd_params[1].Length - 1);
+                    string str_fields = cmd_params[1].Substring(1, cmd_params[1].Length - 2);
                     // wilcardValue
                     int wildValue = 0;
                     // get the list of fields
+                    Console.WriteLine(cmd_params[1]);
                     List<string> field_list = argumentParser(str_fields, ref wildValue);
                     bool endProcessCommand = false;
 
                     switch (cmd)
                     {
                         case "add":
+                            foreach (string l in field_list)
+                                Console.WriteLine(l);
                             obj.add(field_list);
                             break;
                         case "read":
@@ -58,7 +61,16 @@ namespace RemotingSample {
                                 }
                             break;
                         case "take":
-                            Console.WriteLine("Case 2");
+                            lField = obj.take(field_list);
+                            foreach (List<Field> ls in lField)
+                                foreach (Field f in ls)
+                                {
+                                    if (f.getTN() == 0)
+                                        Console.WriteLine(f.getString());
+                                    else
+                                        Console.WriteLine(f.getTest());
+
+                                }
                             break;
                         case "exit":
                             endProcessCommand = true; break;
@@ -76,11 +88,13 @@ namespace RemotingSample {
         static List<string> argumentParser(string fields, ref int wilcardFounded)
         {
             List<string> argsList = new List<string>();
+            Console.WriteLine(fields);
             int bracket_counter = 0;
-
+            Console.WriteLine(fields);
             string cur_field = "";
             for (int i = 0; i < fields.Length; i++)
             {
+                
                 //Console.WriteLine("MEW : {0} kkkkkkk  Value {1}", i, fields[i]);
                 if (fields[i] == ',' && bracket_counter == 0)
                 {
