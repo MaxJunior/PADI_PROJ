@@ -16,7 +16,6 @@ D:\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.dll
 D:\padi\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.pdb
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\bin\Debug\CommonTypes.dll
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\bin\Debug\CommonTypes.pdb
-C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csprojAssemblyReference.cache
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csproj.CoreCompileInputs.cache
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.dll
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.pdb

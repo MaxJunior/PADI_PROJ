@@ -11,12 +11,37 @@ namespace RemotingSample {
     class Client
     {
 
+        private string name;
+        private Uri url;
+        private string fileName,urL;
+        private TcpChannel channel;
+
+        public Client(string n, string url2, string file)
+        {
+            name = n;
+            url = new Uri(url2);
+            fileName = file;
+            urL = url2;
+        }
+
+        public void execute()
+        {
+            System.Collections.IDictionary dict = new System.Collections.Hashtable();
+            dict["port"] = url.Port;
+            dict["name"] = name;
+            channel = new TcpChannel(dict, null, null);
+            ChannelServices.RegisterChannel(channel, true);
+            MyRemoteObject obj = (MyRemoteObject)Activator.GetObject(
+               typeof(MyRemoteObject),urL);
+        }
+
+
         static void Main()
         {
 
 
-            TcpChannel channel = new TcpChannel();
-            ChannelServices.RegisterChannel(channel, true);
+            TcpChannel channel2 = new TcpChannel();
+            ChannelServices.RegisterChannel(channel2, true);
             List<List<Field>> lField;
             MyRemoteObject obj = (MyRemoteObject)Activator.GetObject(
                 typeof(MyRemoteObject),
@@ -92,9 +117,10 @@ namespace RemotingSample {
             int bracket_counter = 0;
             Console.WriteLine(fields);
             string cur_field = "";
+            fields = fields.Replace("\"", "");
             for (int i = 0; i < fields.Length; i++)
             {
-                
+
                 //Console.WriteLine("MEW : {0} kkkkkkk  Value {1}", i, fields[i]);
                 if (fields[i] == ',' && bracket_counter == 0)
                 {
