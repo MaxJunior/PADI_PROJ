@@ -1,5 +1,7 @@
+using RemotingSample;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,8 +12,10 @@ namespace PuppetMaster
     {
         static void Main(string[] args)
         {
-
-            while (true) {
+            Client c = new Client("c1", "", "script.txt");
+            c.executeByPuppet();
+            Console.ReadLine();
+            /*while (true) {
                 
                 string user_input = Console.ReadLine();
                 string[] cmd_params = user_input.Split(' ');
@@ -46,7 +50,10 @@ namespace PuppetMaster
                             break;
                     }
 
-                }
+                }*/
+            
+
         }
     }
 }
+

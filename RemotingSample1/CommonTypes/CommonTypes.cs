@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace RemotingSample
@@ -100,7 +101,12 @@ namespace RemotingSample
             List<List<Field>> aux2 = new List<List<Field>>();
             int founded = 0;
 
+
             
+            if (first.Equals("*"))
+                key = first;
+            else if (first.Equals("null"))
+                key = first;
             if (!first.Contains("("))
                 key = first;
             else
@@ -111,13 +117,17 @@ namespace RemotingSample
 
             foreach (string s in l)
             {
-                if (!s.Contains("(") && !s.Equals("null"))
+                if (s.StartsWith("DADTest") && !s.Contains("("))
+                {
+                    aux.Add(new Field(s,3));
+                }
+                else if (!s.Contains("(") && !s.Equals("null"))
                 {
                     aux.Add(new Field(s));
                 }
                 else if (s.Equals("null"))
                 {
-                    aux.Add(new Field(s,2));
+                    aux.Add(new Field(s, 2));
                 }
                 else
                 {
@@ -128,7 +138,7 @@ namespace RemotingSample
                         int i;
                         int.TryParse(splited[1], out i);
                         DADTestA t = new DADTestA(i, splited[2]);
-                        aux.Add(new Field(t,1));
+                        aux.Add(new Field(t, 1));
 
                     }
                     else if (className.Equals("DADTestB"))
@@ -137,71 +147,118 @@ namespace RemotingSample
                         int.TryParse(splited[1], out i);
                         int.TryParse(splited[3], out j);
                         DADTestB t = new DADTestB(i, splited[2], j);
-                        aux.Add(new Field(t,2));
+                        aux.Add(new Field(t, 2));
                     }
                     else if (className.Equals("DADTestC"))
                     {
                         int i;
                         int.TryParse(splited[1], out i);
                         DADTestC t = new DADTestC(i, splited[2], splited[3]);
-                        aux.Add(new Field(t,3));
+                        aux.Add(new Field(t, 3));
                     }
                 }
             }
-            
-
-            foreach (List<Field> ls in tupleSpace[key])
+            List<string> keys = new List<string>();
+            if (key.Equals("null") || key.Equals("*"))
             {
-                if (!(ls.Count == l.Count))
-                    continue;
-                bool eq=true;
-                for (int i = 0; i < ls.Count; i++)
+                keys = tupleSpace.Keys.ToList();
+            }
+            else if (key.Contains("*"))
+            {
+                String[] subKey = key.Split('*');
+                if (key.StartsWith("*"))
                 {
-                    if (aux[i].getTN() != ls[i].getTN() && aux[i].getType() != 2)
+                    foreach(string k in tupleSpace.Keys)
                     {
-                        eq = false;
-                        break;
+                        if (k.EndsWith(subKey[0]))
+                            key = k;
                     }
-
-                    if (aux[i].getType() == 2 && ls[i].getType() == 0)
-                        continue;
-                    if (aux[i].getType() == 1 && ls[i].getType()==1)
+                    keys.Add(key);
+                }
+                else if (key.EndsWith("*"))
+                {
+                    foreach (string k in tupleSpace.Keys)
                     {
-                        if (aux[i].getString().Equals("*"))
+                        if (k.StartsWith(subKey[0]))
+                            key = k;
+                    }
+                    keys.Add(key);
+                }
+            }
+            else keys.Add(key);
+
+            foreach (string k in keys) { 
+                foreach (List<Field> ls in tupleSpace[k])
+                {
+                    if (!(ls.Count == l.Count))
+                        continue;
+                    bool eq = true;
+                    for (int i = 0; i < ls.Count; i++)
+                    {
+                        if (aux[i].getType() == 3 && ls[i].getType() == 0)
                         {
-                            continue;
-                        }
-                        else if (aux[i].getString().Contains("*"))
-                        {
-                            String[] sTest = aux[i].getString().Split('*');
-                            if (sTest[0].Equals(ls[i].getString()))
+                            Console.WriteLine("BBBBBBBBBBBBBBBBBBBBB     " + ls[i].getTest().GetType().Name);
+                            if (aux[i].getString().Equals(ls[i].getTest().GetType().Name))
                                 continue;
-                            else
-                            {
+                            else {
                                 eq = false;
                                 break;
                             }
                         }
-                    } 
-                    else if(aux[i].getTN() != 0 )
-                    {
-                        if (aux[i].getType()==2 && ls[i].getTN() != 0)
-                            continue;
-                        else if (ls[i].GetType().Equals(aux[i]))
-                            continue;
-                    }
+                        if (aux[i].getTN() != ls[i].getTN() && aux[i].getType() != 2)
+                        {
+                            eq = false;
+                            break;
+                        }
 
-                    else if(!ls[i].equals(aux[i]))
-                    {
-                        eq = false;
-                        break;
+                        if (aux[i].getType() == 2 && ls[i].getType() == 0)
+                            continue;
+                        if (aux[i].getType() == 1 && ls[i].getType() == 1)
+                        {
+                            if (aux[i].getString().Equals("*"))
+                            {
+                                continue;
+                            }
+                            else if (aux[i].getString().Contains("*"))
+                            {
+                                String[] sTest = aux[i].getString().Split('*');
+                                if (aux[i].getString().StartsWith("*"))
+                                {
+                                    if (ls[i].getString().EndsWith(sTest[0]))
+                                        continue;
+                                }
+                                else if (aux[i].getString().EndsWith("*"))
+                                {
+                                    if (ls[i].getString().StartsWith(sTest[0]))
+                                        continue;
+                                }
+                                else
+                                {
+                                    eq = false;
+                                    break;
+                                }
+                            }
+                        }
+                        else if (aux[i].getTN() != 0)
+                        {
+                            if (aux[i].getType() == 2 && ls[i].getTN() != 0)
+                                continue;
+                            else if (ls[i].GetType().Equals(aux[i]))
+                                continue;
+                        }
+
+                        else if (!ls[i].equals(aux[i]))
+                        {
+                            eq = false;
+                            break;
+                        }
+
                     }
-                        
-                }
-                if (eq)
-                {
-                    aux2.Add(ls);
-                    founded = 1;
+                    if (eq)
+                    {
+                        aux2.Add(ls);
+                        founded = 1;
+                    }
                 }
             }
             return aux2;
@@ -215,8 +272,13 @@ namespace RemotingSample
             string[] splited;
             List<Field> aux = new List<Field>();
             List<List<Field>> aux2 = new List<List<Field>>();
+            List<int> takes = new List<int>();
 
 
+            if (first.Equals("*"))
+                key = first;
+            else if (first.Equals("null"))
+                key = first;
             if (!first.Contains("("))
                 key = first;
             else
@@ -265,61 +327,102 @@ namespace RemotingSample
                 }
             }
 
-            foreach (List<Field> ls in tupleSpace[key])
+            List<string> keys = new List<string>();
+            if (key.Equals("null") || key.Equals("*"))
             {
-                if (!(ls.Count == l.Count))
-                    continue;
-                bool eq = true;
-                int j=0;
-                for (int i=0; i < ls.Count; i++)
+                keys = tupleSpace.Keys.ToList();
+            }
+            else if (key.Contains("*"))
+            {
+                String[] subKey = key.Split('*');
+                if (key.StartsWith("*"))
                 {
-                    if (aux[i].getTN() != ls[i].getTN() && aux[i].getType() != 2)
+                    foreach (string k in tupleSpace.Keys)
                     {
-                        eq = false;
-                        break;
+                        if (k.EndsWith(subKey[0]))
+                            key = k;
                     }
-
-                    if (aux[i].getType() == 2 && ls[i].getType() == 0)
-                        continue;
-                    if (aux[i].getType() == 1 && ls[i].getType() == 1)
+                    keys.Add(key);
+                }
+                else if (key.EndsWith("*"))
+                {
+                    foreach (string k in tupleSpace.Keys)
                     {
-                        if (aux[i].getString().Equals("*"))
+                        if (k.StartsWith(subKey[0]))
+                            key = k;
+                    }
+                    keys.Add(key);
+                }
+            }
+            else keys.Add(key);
+            foreach (string k in keys)
+            {
+                foreach (List<Field> ls in tupleSpace[k])
+                {
+                    if (!(ls.Count == l.Count))
+                        continue;
+                    bool eq = true;
+                    int j = 0;
+                    for (int i = 0; i < ls.Count; i++)
+                    {
+                        if (aux[i].getTN() != ls[i].getTN() && aux[i].getType() != 2)
                         {
-                            continue;
+                            eq = false;
+                            break;
                         }
-                        else if (aux[i].getString().Contains("*"))
+
+                        if (aux[i].getType() == 2 && ls[i].getType() == 0)
+                            continue;
+                        if (aux[i].getType() == 1 && ls[i].getType() == 1)
                         {
-                            String[] sTest = aux[i].getString().Split('*');
-                            if (sTest[0].Equals(ls[i].getString()))
-                                continue;
-                            else
+                            if (aux[i].getString().Equals("*"))
                             {
-                                eq = false;
-                                break;
+                                continue;
+                            }
+                            else if (aux[i].getString().Contains("*"))
+                            {
+                                String[] sTest = aux[i].getString().Split('*');
+                                if (aux[i].getString().StartsWith("*"))
+                                {
+                                    if (ls[i].getString().EndsWith(sTest[0]))
+                                        continue;
+                                }
+                                else if (aux[i].getString().EndsWith("*"))
+                                {
+                                    if (ls[i].getString().StartsWith(sTest[0]))
+                                        continue;
+                                }
+                                else
+                                {
+                                    eq = false;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    else if (aux[i].getTN() != 0)
-                    {
-                        if (aux[i].getType() == 2 && ls[i].getTN() != 0)
-                            continue;
-                        else if (ls[i].GetType().Equals(aux[i]))
-                            continue;
-                    }
+                        else if (aux[i].getTN() != 0)
+                        {
+                            if (aux[i].getType() == 2 && ls[i].getTN() != 0)
+                                continue;
+                            else if (ls[i].GetType().Equals(aux[i]))
+                                continue;
+                        }
 
-                    else if (!ls[i].equals(aux[i]))
-                    {
-                        eq = false;
-                        break;
-                    }
+                        else if (!ls[i].equals(aux[i]))
+                        {
+                            eq = false;
+                            break;
+                        }
 
+                    }
+                    if (eq)
+                    {
+                        takes.Add(j);
+                        aux2.Add(ls);
+                    }
+                    j++;
                 }
-                if (eq)
-                {
-                    tupleSpace[key].RemoveAt(j);
-                    aux2.Add(ls);
-                }
-                j++;
+                foreach (int w in takes)
+                    tupleSpace[k].RemoveAt(w);
             }
             return aux2;
 
