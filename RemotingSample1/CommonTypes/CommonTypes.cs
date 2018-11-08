@@ -365,6 +365,17 @@ namespace RemotingSample
                     int j = 0;
                     for (int i = 0; i < ls.Count; i++)
                     {
+                        if (aux[i].getType() == 3 && ls[i].getType() == 0)
+                        {
+                            Console.WriteLine("BBBBBBBBBBBBBBBBBBBBB     " + ls[i].getTest().GetType().Name);
+                            if (aux[i].getString().Equals(ls[i].getTest().GetType().Name))
+                                continue;
+                            else
+                            {
+                                eq = false;
+                                break;
+                            }
+                        }
                         if (aux[i].getTN() != ls[i].getTN() && aux[i].getType() != 2)
                         {
                             eq = false;
