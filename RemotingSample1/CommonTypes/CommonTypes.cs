@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Xml.Serialization;
 
 namespace RemotingSample
 {
@@ -13,6 +15,39 @@ namespace RemotingSample
         public string MetodoOla()
         {
             return "ola!";
+        }
+
+        public void serialize(string k_str, File_Serializer fle)
+        {
+            string dir_name = k_str;
+
+            //check in the directory  exists
+            if (!Directory.Exists(dir_name))
+            {
+                Directory.CreateDirectory(dir_name);
+            }
+
+            File_Serializer serila = new File_Serializer();
+            serila.s = fle.s;
+            serila.test = fle.test;
+            serila.tN = fle.tN;
+            serila.type = fle.type;
+
+
+            Random rnd = new Random();
+            int id = rnd.Next(0, 2000);
+            // add a txt file with object serialized in the directory
+            string file_path_name = @"" + dir_name + "\\" + id + ".txt";
+            TextWriter tx_writer = new StreamWriter(file_path_name); ;
+            XmlSerializer x = new XmlSerializer(serila.GetType()); ;
+
+
+
+            x.Serialize(tx_writer, serila);
+            //Console.WriteLine("object was written in the file");
+            //Console.WriteLine("obj : {0} ", t.ToString());
+            tx_writer.Close();
+
         }
 
 
@@ -36,7 +71,12 @@ namespace RemotingSample
             {
                 if (!s.Contains("("))
                 {
-                    aux.Add(new Field(s));
+                    Field field_aux = new Field(s);
+                    File_Serializer fle = new File_Serializer(s);
+                    //Console.WriteLine("Param : {0}", s);
+                    aux.Add(field_aux);
+                    //serialize(key, fle);
+                    serialize(key, fle);
                 }
                 else
                 {
@@ -47,8 +87,13 @@ namespace RemotingSample
                         int i;
                         int.TryParse(splited[1], out i);
                         DADTestA t = new DADTestA(i, splited[2]);
-                        aux.Add(new Field(t,1));
-                                
+                        string str_long = "DADTestA(" + i + splited[2] + ");1";
+                        Field field_aux = new Field(t, 1);
+                        aux.Add(field_aux);
+                        File_Serializer fle = new File_Serializer(str_long);
+                        //serialize(key, fle);
+                        serialize(key, fle);
+
                     }
                     else if (className.Equals("DADTestB"))
                     {
@@ -56,14 +101,24 @@ namespace RemotingSample
                         int.TryParse(splited[1], out i);
                         int.TryParse(splited[3], out j);
                         DADTestB t = new DADTestB(i, splited[2], j);
-                        aux.Add(new Field(t,2));
+                        string str_long = "DADTestB(" + i + splited[2] + "); 2";
+                        Field field_aux = new Field(t, 2);
+                        aux.Add(field_aux);
+                        File_Serializer fle = new File_Serializer(str_long);
+                        //serialize(key, fle);
+                        serialize(key, fle);
                     }
                     else if (className.Equals("DADTestC"))
                     {
                         int i;
                         int.TryParse(splited[1], out i);
                         DADTestC t = new DADTestC(i, splited[2],splited[3]);
-                        aux.Add(new Field(t,3));
+                        string str_long = "DADTestC(" + i + splited[2] + "); 3";
+                        Field field_aux = new Field(t, 3);
+                        aux.Add(field_aux);
+                        File_Serializer fle = new File_Serializer(str_long);
+                        //serialize(key, fle);
+                        serialize(key, fle);
                     }
                 }
             }
@@ -574,5 +629,28 @@ namespace RemotingSample
             }
         }
     }
+    public class File_Serializer
+    {
+        public string type = "0", tN = "0";
+        public string s;
+        public string test;
 
+        public File_Serializer() { }
+        public File_Serializer(string str)
+        {
+            s = str;
+            test = "null";
+        }
+        public File_Serializer(string s2, int i)
+        {
+            type = i.ToString();
+            s = s2;
+
+        }
+        public File_Serializer(string t, int t2, int y = 0)
+        {
+            test = t;
+            tN = t2.ToString();
+        }
+    }
 }
