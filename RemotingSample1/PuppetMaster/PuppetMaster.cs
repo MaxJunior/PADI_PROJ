@@ -13,6 +13,8 @@ namespace PuppetMaster
         static void Main(string[] args)
         {
             Client c = new Client("c1", "", "script.txt");
+            Server s = new Server();
+            s.executeByPuppet()
             c.executeByPuppet();
             Console.ReadLine();
             /*while (true) {

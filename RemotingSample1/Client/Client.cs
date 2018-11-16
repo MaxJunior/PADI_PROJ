@@ -6,6 +6,10 @@ using System.Net.Sockets;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Text.RegularExpressions;
+using System.Reflection;
+using System.Collections;
+using System.Runtime.Serialization.Formatters;
 
 namespace RemotingSample {
 
@@ -28,56 +32,62 @@ namespace RemotingSample {
 
         public void executeByPuppet()
         {
-            TcpChannel channel2 = new TcpChannel();
-            ChannelServices.RegisterChannel(channel2, true);
-            MyRemoteObject obj = (MyRemoteObject)Activator.GetObject(
-                typeof(MyRemoteObject),
-                "tcp://localhost:8086/MyRemoteObjectName");
+            BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
+            provider.TypeFilterLevel = TypeFilterLevel.Full;
+            IDictionary props = new Hashtable();
+            props["port"] = 0;
+            //props["ip"] = "1.2.3.4";
+            TcpChannel channel = new TcpChannel(props, null, provider);
+            ChannelServices.RegisterChannel(channel, false);
+            MyRemoteInterface obj = (MyRemoteInterface)Activator.GetObject(
+            typeof(MyRemoteInterface),
+            "tcp://localhost:8086/MyRemoteObjectName");
+            if (obj == null)
+                System.Console.WriteLine("Could not locate server");
             executeMain(obj, 1, fileName);
             
         }
 
-        public static void executeMain(MyRemoteObject obj, int args,string arg)
+        public static void executeMain(MyRemoteInterface obj, int args,string arg)
         {
+            StreamWriter file = new StreamWriter("outC.txt");
+            string str_fields = "";
+            List<string> field_list = new List<string>();
             List<List<Field>> lField;
-            
+            string[] cmd_params;
+            string cmd = "";
+            int delay = 0;
+            int repeat = 1;
+
             if (args == 1)
             {
                 string[] lines = File.ReadAllLines(arg);
-                int delay = 0;
-                int repeat = 1;
-                StreamWriter file = new StreamWriter("outC.txt");
-                string str_fields="";     
                 foreach (string l in lines)
                 {
                     if (l.Length == 0)
                         continue;
-                    Console.WriteLine("AAAAAAAAAAAAAAAAAAAAA");
-                    string[] cmd_params = l.Split(' ');
-                    string cmd = cmd_params[0]; 
-                    if (cmd.Equals("begin-repeat") || cmd.Equals("wait"))
-                        str_fields = cmd_params[1];
-                    else if (cmd.Equals("end-repeat"))
-                        Console.WriteLine("end repeat");
+                    if (l.Contains("end"))
+                        cmd = l;
                     else
                     {
-                        if (!cmd_params[1].StartsWith("<") && !cmd_params[1].EndsWith(">"))
+                        cmd_params = l.Split(' ');
+                        cmd = cmd_params[0];
+                        str_fields = cmd_params[1];
+
+                        if (cmd.Contains("repeat") || cmd.Equals("wait"))
+                            Console.WriteLine("status command " + cmd + " " + cmd_params[1]);
+                        else
                         {
-
-                            file.Write("bad input");
-                            break;
-
+                            if (cmd_params.Length > 2)
+                                return;
+                            field_list = argumentParser(str_fields);
                         }
-                        str_fields = cmd_params[1].Substring(1, cmd_params[1].Length - 2);
                     }
-                     
-                    int wildValue = 0;
-                    // get the list of fields
-                    List<string> field_list = argumentParser(str_fields, ref wildValue);
 
-                    Console.WriteLine(str_fields+ "       CCCCCCCCCCCCCCCCCCCCCCCC");
+                    Console.WriteLine(l);
                     for (int i = 0; i <= repeat-1; i++)
                     {
+                        Console.WriteLine("Repeating: " + i);
 
                         switch (cmd)
                         {
@@ -85,38 +95,41 @@ namespace RemotingSample {
                                 obj.add(field_list);
                                 break;
                             case "read":
-
                                 lField = obj.readTuple(field_list);
+                                while(lField==null)
+                                    lField = obj.readTuple(field_list);
                                 foreach (List<Field> ls in lField)
                                     foreach (Field f in ls)
                                     {
-                                        if (f.getTN() == 0)
-                                            Console.WriteLine(f.getString());
+                                        if (f.getType() == 0 || f.getType() == 2)
+                                            Console.WriteLine(f.getClassName());
                                         else
-                                            Console.WriteLine(f.getTest());
+                                            Console.WriteLine(f.getString());
 
                                     }
                                 break;
                             case "take":
                                 lField = obj.take(field_list);
+                                while (lField == null)
+                                    lField = obj.take(field_list);
                                 foreach (List<Field> ls in lField)
                                     foreach (Field f in ls)
                                     {
-                                        if (f.getTN() == 0)
-                                            Console.WriteLine(f.getString());
+                                        if (f.getType() == 0 || f.getType() == 2)
+                                            Console.WriteLine(f.getClassName());
                                         else
-                                            Console.WriteLine(f.getTest());
+                                            Console.WriteLine(f.getString());
 
                                     }
                                 break;
 
                             case "wait":
-                                Int32.TryParse(field_list[0], out delay);
+                                Int32.TryParse(str_fields, out delay);
                                 System.Threading.Thread.Sleep(delay);
                                 Console.WriteLine(delay);
                                 break;
                             case "begin-repeat":
-                                Int32.TryParse(field_list[0], out repeat);
+                                Int32.TryParse(str_fields, out repeat);
                                 break;
                             case "end-repeat":
                                 repeat = 1;
@@ -134,26 +147,18 @@ namespace RemotingSample {
 
                         
                         Console.WriteLine("Write a command add|take|read <field1,field2,...,fieldn>  (exit:to leave) :");
-                        string user_input = Console.ReadLine();
-                        string[] cmd_params = user_input.Split(' ');
-                        // get the command
-                        string cmd = cmd_params[0];
-                        // given string : <field1,...,fieldN> get  just field1,...,fieldN
+                        string l = Console.ReadLine();
+                        if (l.Length == 0)
+                            continue;
+                        cmd_params = l.Split(' ');
+                        cmd = cmd_params[0];
+                        str_fields = cmd_params[1].Replace("\n", "");
+                        field_list = argumentParser(str_fields);
                         if (cmd.Equals("exit"))
-                            break; 
-
-                        if (!cmd_params[1].StartsWith("<") && !cmd_params[1].EndsWith(">"))
                         {
-                            Console.WriteLine("Invalid Command sintax: Please,use the correct command syntax.");
-                            executeMain(obj, args,arg);
-                            return;
+                            Console.WriteLine("Exiting");
+                            break;
                         }
-                        string str_fields = cmd_params[1].Substring(1, cmd_params[1].Length - 2);
-                        // wilcardValue
-                        int wildValue = 0;
-                        // get the list of fields     
-                        List<string> field_list = argumentParser(str_fields, ref wildValue);
-                       
 
                         switch (cmd)
                         {
@@ -166,10 +171,10 @@ namespace RemotingSample {
                                 foreach (List<Field> ls in lField)
                                     foreach (Field f in ls)
                                     {
-                                        if (f.getTN() == 0)
-                                            Console.WriteLine(f.getString());
+                                        if (f.getType() == 0)
+                                            Console.WriteLine(f.getClassName());
                                         else
-                                            Console.WriteLine(f.getTest());
+                                            Console.WriteLine(f.getString());
 
                                     }
                                 break;
@@ -178,10 +183,10 @@ namespace RemotingSample {
                                 foreach (List<Field> ls in lField)
                                     foreach (Field f in ls)
                                     {
-                                        if (f.getTN() == 0)
-                                            Console.WriteLine(f.getString());
+                                        if (f.getType() == 0)
+                                            Console.WriteLine(f.getClassName());
                                         else
-                                            Console.WriteLine(f.getTest());
+                                            Console.WriteLine(f.getString());
 
                                     }
                                 break;
@@ -214,11 +219,13 @@ namespace RemotingSample {
         {
 
 
-            TcpChannel channel2 = new TcpChannel();
-            ChannelServices.RegisterChannel(channel2, true);  
-            MyRemoteObject obj = (MyRemoteObject)Activator.GetObject(
-                typeof(MyRemoteObject),
-                "tcp://localhost:8086/MyRemoteObjectName");
+            TcpChannel channel = new TcpChannel();
+            ChannelServices.RegisterChannel(channel, false);
+            MyRemoteInterface obj = (MyRemoteInterface)Activator.GetObject(
+            typeof(MyRemoteInterface),
+            "tcp://localhost:8086/MyRemoteObjectName");
+            if (obj == null)
+                System.Console.WriteLine("Could not locate server");
 
             if (args.Length == 0)
                 executeMain(obj, 0, "");
@@ -229,61 +236,125 @@ namespace RemotingSample {
             else
                 return;
         }
-        static List<string> argumentParser(string fields, ref int wilcardFounded)
+        static List<string> argumentParser(string fields)
         {
-            List<string> argsList = new List<string>();
+           
+            List<string> argsList = new List<string>();    
             int bracket_counter = 0;
-            
+            int quote = 0;
             string cur_field = "";
-            fields = fields.Replace("\"", "");
-            for (int i = 0; i < fields.Length; i++)
+            int i = 0;
+            if (!fields.StartsWith(" < ") && !fields.EndsWith(">"))
+            { 
+                return null;
+            }
+            fields = fields.Substring(1, fields.Length - 2);           
+            while(i < fields.Length)
             {
+                
 
-                //Console.WriteLine("MEW : {0} kkkkkkk  Value {1}", i, fields[i]);
-                if (fields[i] == ',' && bracket_counter == 0)
+                if (fields[i] == '"' && quote == 0)
                 {
-                    //Console.WriteLine(cur_field);
+                    cur_field += fields[i];
+                    i++;
+                    while (fields[i] != '"')
+                    {      
+                        cur_field += fields[i];
+                        i++;
+                        quote = 1;
+                    }
+
+                    if (quote == 0)
+                        return null;
+                    cur_field += fields[i];
+                    quote = 0;
                     argsList.Add(cur_field);
-
                     cur_field = "";
-                }
-                else if (fields[i] == '(')
-                {
-                    cur_field += fields[i];
-                    bracket_counter++;
-                }
-                else if (fields[i] == ',' && bracket_counter > 0)
-                {
-                    cur_field += fields[i];
-
-                }
-                else if (fields[i] == ')')
-                {
-                    cur_field += fields[i];
-                    argsList.Add(cur_field);
-                    //Console.WriteLine("Addd : {0}", cur_field);
-                    cur_field = "";
+                    i++;
                     bracket_counter = 0;
+
+                }
+
+                else if(fields[i] >= 'a' && fields[i] <= 'z' || fields[i] >= 'A' && fields[i] <= 'Z')
+                {
+                    cur_field += fields[i];
+                    i++;
+                    while (fields[i] != '(' && fields[i] != ',')
+                    {
+                        cur_field += fields[i];
+                        if (i == (fields.Length - 1))
+                        {
+                            break;
+                        }
+                        else
+                            i++;
+                    }
+                    if (fields[i] == ',' || i == (fields.Length - 1))
+                    {
+                        argsList.Add(cur_field);
+                        bracket_counter = 0;
+                        i++;
+                    }                   
+                    else if (fields[i] == '(')
+                    {
+                        cur_field += fields[i];
+                        i++;
+                        string args = "";
+                        while (fields[i] != ')')
+                        {
+                            args += fields[i];
+                            i++;
+                        }
+                        
+                        object[] splited = funcArgs(args.Split(','));
+                        if (splited == null)
+                            return null;
+                        cur_field += args + fields[i];
+                        argsList.Add(cur_field);
+                        cur_field = "";
+                        bracket_counter = 0;
+                        i++;
+
+                    }
+                }
+                else if(fields[i] == ',')
+                {
+                    bracket_counter = 1;
+                    i++;
+                    continue;
+                }
+            }     
+            if (bracket_counter==0)
+                return argsList;
+            else
+                return null;
+        }
+
+        public static object[] funcArgs(string[] splited)
+        {
+            object[] args = new object[splited.Length];
+            int j;
+            int i = 0;
+            foreach (string field in splited)
+            {
+                if (field.StartsWith("\"") && field.EndsWith("\""))
+                {
+
+                    args[i] = field;
                 }
                 else
                 {
-                    cur_field += fields[i];
-                    if (i == fields.Length - 1)
-                        argsList.Add(cur_field);
-
-                    if (fields[i] == '*')
+                    try
                     {
-                        Console.WriteLine("WilDCARD FOUND");
-                        wilcardFounded = (cur_field == "\""  || cur_field == @"'") ? 1 : 2;
-                        //Console.WriteLine("W : {0}", wilcardFounded);
+                        Int32.TryParse(field, out j);
+                        args[i] = j;
                     }
-                    //Console.WriteLine("Else  {0} ...",cur_field);
+                    catch (FormatException) { return null; }
                 }
+                i++;
             }
-            return argsList;
+            return args;
         }
-
-        
 
     }
 }

@@ -1,20 +1,26 @@
 using System;
+using System.Collections;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Serialization.Formatters;
 using System.Threading;
 
 namespace RemotingSample {
 
-	class Server {
+	public class Server {
 
         private static int mainS = 0;
         private static int replica = 0;
 
-        public Server(int main, int replicai)
+        public Server()
         {
-            MainS = main;
-            replica = replicai;
+        }
+
+        public void executeByPuppet()
+        {
+            Thread th = new Thread(new ThreadStart(this.method));
+            th.Start();
         }
 
         public static int MainS
@@ -46,13 +52,18 @@ namespace RemotingSample {
         {
             if (mainS == 1)
             {
-                TcpChannel channel = new TcpChannel(8086);
-                ChannelServices.RegisterChannel(channel, true);
-
-                RemotingConfiguration.RegisterWellKnownServiceType(
-                    typeof(MyRemoteObject),
-                    "MyRemoteObjectName",
-                    WellKnownObjectMode.Singleton);
+                BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
+                provider.TypeFilterLevel = TypeFilterLevel.Full;
+                IDictionary props = new Hashtable();
+                props["port"] = 8086;
+                //props["ip"] = "1.2.3.4";
+                TcpChannel channel = new TcpChannel(props, null, provider);
+                //TcpChannel channel = new TcpChannel(8086);
+                ChannelServices.RegisterChannel(channel, false);
+                MyRemoteObject mo = new MyRemoteObject();
+                RemotingServices.Marshal(mo,
+                "MyRemoteObjectName",
+                typeof(MyRemoteObject));
             }
         }
 
