@@ -38,3 +38,13 @@ C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\Server\obj\Debug\Server.cs
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\Server\obj\Debug\Server.csproj.CopyComplete
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\Server\obj\Debug\Server.exe
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\Server\obj\Debug\Server.pdb
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\bin\Debug\Server.exe.config
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\bin\Debug\Server.exe
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\bin\Debug\Server.pdb
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\bin\Debug\CommonTypes.dll
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\bin\Debug\CommonTypes.pdb
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\obj\Debug\Server.csprojAssemblyReference.cache
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\obj\Debug\Server.csproj.CoreCompileInputs.cache
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\obj\Debug\Server.csproj.CopyComplete
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\obj\Debug\Server.exe
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\Server\obj\Debug\Server.pdb

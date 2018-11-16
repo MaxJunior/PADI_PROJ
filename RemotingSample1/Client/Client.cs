@@ -49,15 +49,68 @@ namespace RemotingSample {
             
         }
 
+        public static void repeatCmd(MyRemoteInterface obj, List<List<string>> field_list2, List<string> cmds)
+        {
+            int delay = 0;
+            List<List<Field>> lField;
+            for (int i=0;i<cmds.Count;i++)
+            {
+                
+                switch (cmds[i])
+                {
+                    case "add":
+                        obj.add(field_list2[i]);
+                        break;
+                    case "read":
+                        lField = obj.readTuple(field_list2[i]);
+                        while (lField == null)
+                            lField = obj.readTuple(field_list2[i]);
+                        foreach (List<Field> ls in lField)
+                            foreach (Field f in ls)
+                            {
+                                if (f.getType() == 0 || f.getType() == 2)
+                                    Console.WriteLine(f.getClassName());
+                                else
+                                    Console.WriteLine(f.getString());
+
+                            }
+                        break;
+                    case "take":
+                        lField = obj.take(field_list2[i]);
+                        while (lField == null)
+                            lField = obj.take(field_list2[i]);
+                        foreach (List<Field> ls in lField)
+                            foreach (Field f in ls)
+                            {
+                                if (f.getType() == 0 || f.getType() == 2)
+                                    Console.WriteLine(f.getClassName());
+                                else
+                                    Console.WriteLine(f.getString());
+
+                            }
+                        break;
+
+                    case "wait":
+                        Int32.TryParse(field_list2[i][0], out delay);
+                        System.Threading.Thread.Sleep(delay);
+                        Console.WriteLine(delay);
+                        break;
+                }
+            }
+        }
+
         public static void executeMain(MyRemoteInterface obj, int args,string arg)
         {
             string str_fields = "";
+            List<string> cmds = new List<string>();
             List<string> field_list = new List<string>();
+            List<List<string>> field_list2 = new List<List<string>>();
             List<List<Field>> lField;
             string[] cmd_params;
             string cmd = "";
             int delay = 0;
-            int repeat = 1;
+            int repeat = 0;
+            bool startRepeat = false;
 
             if (args == 1)
             {
@@ -85,56 +138,89 @@ namespace RemotingSample {
                     }
 
                     Console.WriteLine(l);
-                    for (int i = 0; i <= repeat-1; i++)
+                    
+
+                    switch (cmd)
                     {
-                        Console.WriteLine("Repeating: " + i);
-
-                        switch (cmd)
-                        {
-                            case "add":
-                                obj.add(field_list);
-                                break;
-                            case "read":
+                        case "add":
+                            obj.add(field_list);
+                            if (repeat > 0)
+                            {
+                                field_list2.Add(field_list);
+                                cmds.Add(cmd);
+                            }
+                            break;
+                        case "read":
+                            lField = obj.readTuple(field_list);
+                            if (repeat > 0)
+                            {
+                                field_list2.Add(field_list);
+                                cmds.Add(cmd);
+                            }
+                            while (lField==null)
                                 lField = obj.readTuple(field_list);
-                                while(lField==null)
-                                    lField = obj.readTuple(field_list);
-                                foreach (List<Field> ls in lField)
-                                    foreach (Field f in ls)
-                                    {
-                                        if (f.getType() == 0 || f.getType() == 2)
-                                            Console.WriteLine(f.getClassName());
-                                        else
-                                            Console.WriteLine(f.getString());
+                            foreach (List<Field> ls in lField)
+                                foreach (Field f in ls)
+                                {
+                                    if (f.getType() == 0 || f.getType() == 2)
+                                        Console.WriteLine(f.getClassName());
+                                    else
+                                        Console.WriteLine(f.getString());
 
-                                    }
-                                break;
-                            case "take":
+                                }
+                            break;
+                        case "take":
+                            if (repeat > 0)
+                            {
+                                field_list2.Add(field_list);
+                                cmds.Add(cmd);
+                            }
+                            lField = obj.take(field_list);
+                            while (lField == null)
                                 lField = obj.take(field_list);
-                                while (lField == null)
-                                    lField = obj.take(field_list);
-                                foreach (List<Field> ls in lField)
-                                    foreach (Field f in ls)
-                                    {
-                                        if (f.getType() == 0 || f.getType() == 2)
-                                            Console.WriteLine(f.getClassName());
-                                        else
-                                            Console.WriteLine(f.getString());
+                            foreach (List<Field> ls in lField)
+                                foreach (Field f in ls)
+                                {
+                                    if (f.getType() == 0 || f.getType() == 2)
+                                        Console.WriteLine(f.getClassName());
+                                    else
+                                        Console.WriteLine(f.getString());
 
-                                    }
-                                break;
+                                }
+                            break;
 
-                            case "wait":
-                                Int32.TryParse(str_fields, out delay);
-                                System.Threading.Thread.Sleep(delay);
-                                Console.WriteLine(delay);
-                                break;
-                            case "begin-repeat":
-                                Int32.TryParse(str_fields, out repeat);
-                                break;
-                            case "end-repeat":
-                                repeat = 1;
-                                break;
-                        }
+                        case "wait":
+                            Int32.TryParse(str_fields, out delay);
+                            System.Threading.Thread.Sleep(delay);
+                            Console.WriteLine(delay);
+                            if (repeat > 0)
+                            {
+                                List<string> x = new List<string>();
+                                x.Add(str_fields);
+                                field_list2.Add(x);
+                                cmds.Add(cmd);
+                            }
+                            break;
+                        case "begin-repeat":
+                            Int32.TryParse(str_fields, out repeat);
+                            break;
+                        case "end-repeat":
+                            int v = 0;
+                            foreach (List<string> ls in field_list2)
+                            {
+                                Console.WriteLine("TTT   "+cmds[v]);
+                                foreach (string s in ls)
+                                    Console.WriteLine("HHHH   " + s);
+                                Console.WriteLine("TT222T");
+                                v++;
+                            }
+                            for (int i = 0; i < (repeat - 1); i++)
+                            {
+                                Console.WriteLine(i + "    GFggg");
+                                repeatCmd(obj, field_list2, cmds);
+                            }
+                            repeat = 0;
+                            break;
                     }
                 }
             }
@@ -293,6 +379,7 @@ namespace RemotingSample {
                     {
                         argsList.Add(cur_field);
                         bracket_counter = 0;
+                        cur_field = "";
                         i++;
                     }                   
                     else if (fields[i] == '(')

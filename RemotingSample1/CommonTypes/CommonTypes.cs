@@ -56,11 +56,18 @@ namespace RemotingSample
         {
             List<Field> aux = new List<Field>();
             Assembly assembly = Assembly.GetExecutingAssembly();
-
+            string key;
             if (l == null)
                 return;
             string first = l[0];
-            string  key = first.Replace("\"", "");
+            if (!first.Contains("("))
+                key = first.Replace("\"", "");
+            else
+            {
+                string[] key2 = first.Split(new char[] { '(', ')', ',' });
+                key = key2[0];
+
+            }
             if (first.Contains("*") || first.Equals("null"))
                 return;
 
@@ -96,10 +103,11 @@ namespace RemotingSample
                 tupleSpace[key].Add(aux);
             
             else
-            {
+            {           
                 List<List<Field>> aux2 = new List<List<Field>>();
                 aux2.Add(aux);
                 tupleSpace.Add(key, aux2);
+                
             }
            
         }
@@ -186,7 +194,6 @@ namespace RemotingSample
             else keys.Add(key);
 
             foreach (string k in keys) {
-                Console.WriteLine(k);
                 foreach (List<Field> ls in tupleSpace[k])
                 {
                     if (!(ls.Count == l.Count))
@@ -200,7 +207,6 @@ namespace RemotingSample
                         }
                         else
                         {
-                            Console.WriteLine("AaaAAa" + aux[i].getClassName());
                             eq = false;
                             break;
                         }
@@ -222,6 +228,8 @@ namespace RemotingSample
         [MethodImpl(MethodImplOptions.Synchronized)]
         public List<List<Field>> take(List<string> l)
         {
+            foreach (string k in tupleSpace.Keys)
+                Console.WriteLine(k + "RRRRRRRRRRRRRRR");
             List<Field> aux = new List<Field>();
             List<List<Field>> aux2 = new List<List<Field>>();
             Assembly assembly = Assembly.GetExecutingAssembly();
@@ -232,13 +240,14 @@ namespace RemotingSample
             string first = l[0];
             int founded = 0;
             string key;
-
+            
             if (!first.Contains("("))
                 key = first.Replace("\"", "");
             else
             {
                 string[] key2 = first.Split(new char[] { '(', ')', ',' });
                 key = key2[0];
+                
             }
 
 
@@ -250,7 +259,7 @@ namespace RemotingSample
                         aux.Add(new Field(s.Replace("\"", "")));
                     else
                     {
-                        Type type = assembly.GetType("RemotingSample." + s);
+                        Type type = assembly.GetType("RemotingSample." + s);              
                         aux.Add(new Field(Activator.CreateInstance(type), 2));
                     }
                 }
@@ -281,7 +290,7 @@ namespace RemotingSample
                 {
                     foreach (string k in tupleSpace.Keys)
                     {
-                        if (k.EndsWith(subKey[0]))
+                        if (k.EndsWith(subKey[1]))
                             key = k;
                     }
                     keys.Add(key);
@@ -297,10 +306,14 @@ namespace RemotingSample
                 }
             }
             else keys.Add(key);
-
+            
             foreach (string k in keys)
             {
+                
+               
                 int j = 0;
+                if (!tupleSpace.Keys.Contains(k))
+                    continue;
                 foreach (List<Field> ls in tupleSpace[k])
                 {
                     if (!(ls.Count == l.Count))
@@ -323,6 +336,7 @@ namespace RemotingSample
                         aux2.Add(ls);
                         takes.Add(j);
                         founded = 1;
+                        continue;
                     }
                     j++;
                 }
@@ -514,7 +528,6 @@ namespace RemotingSample
                     {
                         return true;
                     }
-                    Console.WriteLine(test.ToString() + "    " + f.getTest().ToString());
                     Assembly assembly = Assembly.GetExecutingAssembly();
                     Type typ = test.GetType();
                     MethodInfo mt = typ.GetMethod("Equals", new Type[] { typ });

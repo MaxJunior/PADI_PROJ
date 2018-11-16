@@ -14,9 +14,10 @@ namespace PuppetMaster
         PuppetMaster() { }
             static void Main(string[] args)
         {
+
             PuppetMaster p = new PuppetMaster();
-            Client c = new Client("c1", "", "script.txt");
-            Client c2 = new Client("c12", "", "script.txt");
+            Client c = new Client("c1", "", "s2.txt");
+            Client c2 = new Client("c12", "", "s3.txt");
             Server s = new Server();
             s.executeByPuppet();
             Thread th = new Thread(new ThreadStart(c.executeByPuppet));

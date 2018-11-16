@@ -20,3 +20,9 @@ C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\obj\Debug\Comm
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.dll
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.pdb
 C:\Users\gonca\Desktop\padi\PADI_PROJ\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csprojAssemblyReference.cache
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\CommonTypes\bin\Debug\CommonTypes.dll
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\CommonTypes\bin\Debug\CommonTypes.pdb
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csprojAssemblyReference.cache
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.csproj.CoreCompileInputs.cache
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.dll
+Z:\Desktop\PADI_PROJ-master (1)\PADI_PROJ-master\RemotingSample1\CommonTypes\obj\Debug\CommonTypes.pdb
