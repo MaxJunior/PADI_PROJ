@@ -50,8 +50,7 @@ namespace RemotingSample {
 
         public void method()
         {
-            if (mainS == 1)
-            {
+
                 BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
                 provider.TypeFilterLevel = TypeFilterLevel.Full;
                 IDictionary props = new Hashtable();
@@ -59,19 +58,19 @@ namespace RemotingSample {
                 //props["ip"] = "1.2.3.4";
                 TcpChannel channel = new TcpChannel(props, null, provider);
                 //TcpChannel channel = new TcpChannel(8086);
-                ChannelServices.RegisterChannel(channel, false);
+                //ChannelServices.RegisterChannel(channel, false);
                 MyRemoteObject mo = new MyRemoteObject();
                 RemotingServices.Marshal(mo,
                 "MyRemoteObjectName",
                 typeof(MyRemoteObject));
-            }
+
         }
 
         static void Main(string[] args) {
 
             if(mainS == 0 && replica == 0)
             {
-                Server s1 = new Server(1, 0);
+                Server s1 = new Server();
                 Thread th = new Thread(new ThreadStart(s1.method));
                 th.Start();
             }

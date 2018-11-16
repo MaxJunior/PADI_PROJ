@@ -36,6 +36,7 @@ namespace RemotingSample {
             provider.TypeFilterLevel = TypeFilterLevel.Full;
             IDictionary props = new Hashtable();
             props["port"] = 0;
+            props["name"] = name;
             //props["ip"] = "1.2.3.4";
             TcpChannel channel = new TcpChannel(props, null, provider);
             ChannelServices.RegisterChannel(channel, false);
@@ -50,7 +51,6 @@ namespace RemotingSample {
 
         public static void executeMain(MyRemoteInterface obj, int args,string arg)
         {
-            StreamWriter file = new StreamWriter("outC.txt");
             string str_fields = "";
             List<string> field_list = new List<string>();
             List<List<Field>> lField;

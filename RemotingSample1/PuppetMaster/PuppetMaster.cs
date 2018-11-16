@@ -4,18 +4,25 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PuppetMaster
 {
     class PuppetMaster
     {
-        static void Main(string[] args)
+        PuppetMaster() { }
+            static void Main(string[] args)
         {
+            PuppetMaster p = new PuppetMaster();
             Client c = new Client("c1", "", "script.txt");
+            Client c2 = new Client("c12", "", "script.txt");
             Server s = new Server();
-            s.executeByPuppet()
-            c.executeByPuppet();
+            s.executeByPuppet();
+            Thread th = new Thread(new ThreadStart(c.executeByPuppet));
+            th.Start();
+            Thread th2 = new Thread(new ThreadStart(c2.executeByPuppet));
+            th2.Start();
             Console.ReadLine();
             /*while (true) {
                 
