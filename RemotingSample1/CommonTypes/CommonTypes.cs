@@ -48,6 +48,26 @@ namespace RemotingSample
 
         }
 
+        // given a key(directory) get all his values(schemas) 
+        public List<string> readSchemaToFromFile(string dir_name)
+        {
+            List<string> schemas = new List<string>();
+            string file_path = @"" + dir_name + "\\schemas.txt";
+
+            string[] raw_schemas = File.ReadAllLines(file_path);
+
+            if (raw_schemas == null)
+                return null;
+
+
+            foreach (string s in raw_schemas)
+            {
+                schemas.Add(s.Substring(1, s.Length - 2));
+            }
+
+            return schemas;
+        }
+
 
         [MethodImpl(MethodImplOptions.Synchronized)]
         public void add(List<string> l)
