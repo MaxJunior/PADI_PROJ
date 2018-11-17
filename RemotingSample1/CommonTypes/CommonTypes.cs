@@ -18,35 +18,33 @@ namespace RemotingSample
             return "ola!";
         }
 
-        public void serialize(string k_str, File_Serializer fle)
+        public void writeSchemaToFile(string k_str, List<string> schema)
         {
+
             string dir_name = k_str;
 
-            //check in the directory  exists
+            //check if the directory  exists
             if (!Directory.Exists(dir_name))
             {
                 Directory.CreateDirectory(dir_name);
             }
 
-            File_Serializer serila = new File_Serializer();
-            serila.s = fle.s;
-            serila.test = fle.test;
-            serila.type = fle.type;
+            string file_path = @"" + dir_name + "\\schemas.txt";
 
+            string data_schema = "<";
+            for (int i = 0; i < schema.Count; i++)
+            {
 
-            Random rnd = new Random();
-            int id = rnd.Next(0, 2000);
-            // add a txt file with object serialized in the directory
-            string file_path_name = @"" + dir_name + "\\" + id + ".txt";
-            TextWriter tx_writer = new StreamWriter(file_path_name); ;
-            XmlSerializer x = new XmlSerializer(serila.GetType()); ;
+                data_schema += (i != schema.Count - 1) ? "" + schema[i] + "," : "" + schema[i];
+            }
+            data_schema += ">";
 
+            /// append to the file, if doesnt exist ,creates it.
+            using (StreamWriter sw = File.AppendText(file_path))
+            {
+                sw.WriteLine(data_schema);
+            }
 
-
-            x.Serialize(tx_writer, serila);
-            //Console.WriteLine("object was written in the file");
-            //Console.WriteLine("obj : {0} ", t.ToString());
-            tx_writer.Close();
 
         }
 
@@ -109,7 +107,10 @@ namespace RemotingSample
                 tupleSpace.Add(key, aux2);
                 
             }
-           
+            writeSchemaToFile(key, l);
+
+
+
         }
 
 
@@ -543,28 +544,7 @@ namespace RemotingSample
             }
         }
     }
-    public class File_Serializer
-    {
-        public string type = "0";
-        public string s;
-        public string test;
-
-        public File_Serializer() { }
-        public File_Serializer(string str)
-        {
-            int i = 1;
-            s = str;
-            type = i.ToString();
-            test = "null";
-        }
-        public File_Serializer(string s2, int i)
-        {
-            type = i.ToString();
-            s = s2;
-
-        }
-
-    }
+    
 
     public interface MyRemoteInterface
     {
