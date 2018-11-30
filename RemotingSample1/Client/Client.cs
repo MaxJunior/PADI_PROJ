@@ -20,15 +20,19 @@ namespace RemotingSample {
         private Uri url;
         private string fileName,urL;
         private TcpChannel channel;
+        bool crash = false;
 
         public Client(string n, string url2, string file)
         {
             name = n;
-            //url = new Uri(url2);
             fileName = file;
             urL = url2;
         }
 
+        public void setCrash(bool c)
+        {
+            crash = c;
+        }
 
         public void executeByPuppet()
         {
@@ -47,6 +51,14 @@ namespace RemotingSample {
                 System.Console.WriteLine("Could not locate server");
             executeMain(obj, 1, fileName);
             
+        }
+
+        public void status()
+        {
+            if (crash)
+                Console.WriteLine("Client " + name + " crashed status");
+            else
+                Console.WriteLine("Client " + name + " available");
         }
 
         public static void repeatCmd(MyRemoteInterface obj, List<List<string>> field_list2, List<string> cmds)

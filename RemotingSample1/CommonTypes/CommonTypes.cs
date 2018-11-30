@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml.Serialization;
+using System.Runtime.Remoting;
 
 namespace RemotingSample
 {
@@ -12,6 +13,26 @@ namespace RemotingSample
     {
 
         private IDictionary<string, List<List<Field>>> tupleSpace = new Dictionary<string, List<List<Field>>>();
+        bool crash = false;
+        bool freeze = false;
+        private int max_delay;
+        private int min_delay;
+
+        public MyRemoteObject() { }
+
+        public MyRemoteObject(int min, int max) {
+            min_delay = min;
+            max_delay = max;
+        }
+
+        public void setCrash(bool c)
+        {
+            crash = c;
+        }
+        public void setFreeze(bool c)
+        {
+            freeze = c;
+        }
 
         public string MetodoOla()
         {
@@ -72,6 +93,15 @@ namespace RemotingSample
         [MethodImpl(MethodImplOptions.Synchronized)]
         public void add(List<string> l)
         {
+            if (crash)
+                throw new RemotingException();
+            while (freeze)
+                continue;
+
+            Random r = new Random();
+            int rInt = r.Next(min_delay, max_delay); //for ints
+            System.Threading.Thread.Sleep(rInt);
+
             List<Field> aux = new List<Field>();
             Assembly assembly = Assembly.GetExecutingAssembly();
             string key;
@@ -136,6 +166,16 @@ namespace RemotingSample
 
         public List<List<Field>> readTuple(List<string> l)
         {
+            if (crash)
+                throw new RemotingException();
+
+            while (freeze)
+                continue;
+
+            Random r = new Random();
+            int rInt = r.Next(min_delay, max_delay); //for ints
+            System.Threading.Thread.Sleep(rInt);
+
             List<Field> aux = new List<Field>();
             List<List<Field>> aux2 = new List<List<Field>>();
             Assembly assembly = Assembly.GetExecutingAssembly();
@@ -249,6 +289,16 @@ namespace RemotingSample
         [MethodImpl(MethodImplOptions.Synchronized)]
         public List<List<Field>> take(List<string> l)
         {
+
+            if (crash)
+                throw new RemotingException();
+
+            while (freeze)
+                continue;
+            Random r = new Random();
+            int rInt = r.Next(min_delay, max_delay); //for ints
+            System.Threading.Thread.Sleep(rInt);
+
             foreach (string k in tupleSpace.Keys)
                 Console.WriteLine(k + "RRRRRRRRRRRRRRR");
             List<Field> aux = new List<Field>();

@@ -12,15 +12,49 @@ namespace RemotingSample {
 
         private static int mainS = 0;
         private static int replica = 0;
+        private int max_delay;
+        private int min_delay;
+        private string id;
+        private string url;
+        bool crash = false;
+        bool freeze = false;
+        private MyRemoteObject mo;
+
+        public Server(string id2, string url2, int min, int max)
+        {
+            id = id2;
+            url = url2;
+            min_delay = min;
+            max_delay = max;
+        }
 
         public Server()
         {
         }
 
+        public void setCrash(bool c)
+        {
+            crash = c;
+            mo.setCrash(c);
+            //Environment.Exit(1);
+        }
+
+        public void setFreeze(bool c)
+        {
+            freeze = c;
+            mo.setFreeze(c);
+        }
+
         public void executeByPuppet()
         {
+            Console.WriteLine("Server " + id + " is crashed: " + crash + " and is freeze: " + freeze);
             Thread th = new Thread(new ThreadStart(this.method));
             th.Start();
+        }
+
+        public void status()
+        {
+            Console.WriteLine("Server " + id + " is crashed: " + crash + " and is freeze: "+freeze);
         }
 
         public static int MainS
@@ -59,7 +93,7 @@ namespace RemotingSample {
                 TcpChannel channel = new TcpChannel(props, null, provider);
                 //TcpChannel channel = new TcpChannel(8086);
                 //ChannelServices.RegisterChannel(channel, false);
-                MyRemoteObject mo = new MyRemoteObject();
+                mo = new MyRemoteObject();
                 RemotingServices.Marshal(mo,
                 "MyRemoteObjectName",
                 typeof(MyRemoteObject));
