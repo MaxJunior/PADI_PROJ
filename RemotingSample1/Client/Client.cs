@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using System.Reflection;
 using System.Collections;
 using System.Runtime.Serialization.Formatters;
+using System.Net;
+using System.Threading;
 
 namespace RemotingSample {
 
@@ -17,16 +19,19 @@ namespace RemotingSample {
     {
 
         private string name;
-        private Uri url;
-        private string fileName,urL;
+        private Uri uri;
+        private string fileName;
         private TcpChannel channel;
         bool crash = false;
+        private static List<Uri> urls;
+        private static int urlRead = 0;
 
-        public Client(string n, string url2, string file)
+        public Client(string n, Uri uri2, string file, List<Uri> urls2)
         {
             name = n;
             fileName = file;
-            urL = url2;
+            uri = uri2;
+            urls = urls2;
         }
 
         public void setCrash(bool c)
@@ -44,13 +49,29 @@ namespace RemotingSample {
             //props["ip"] = "1.2.3.4";
             TcpChannel channel = new TcpChannel(props, null, provider);
             ChannelServices.RegisterChannel(channel, false);
+            String reference = "tcp://localhost:" + urls[urlRead].Port +"/MyRemoteObjectName";
+            Console.WriteLine("TTTTTT  " + reference);
             MyRemoteInterface obj = (MyRemoteInterface)Activator.GetObject(
-            typeof(MyRemoteInterface),
-            "tcp://localhost:8086/MyRemoteObjectName");
+            typeof(MyRemoteInterface),reference);
+          
             if (obj == null)
                 System.Console.WriteLine("Could not locate server");
             executeMain(obj, 1, fileName);
             
+        }
+        public static string GetIPAddress()
+        {
+            IPHostEntry host;
+            string localIP = "?";
+            host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (IPAddress ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    localIP = ip.ToString();
+                }
+            }
+            return localIP;
         }
 
         public void status()
@@ -122,7 +143,6 @@ namespace RemotingSample {
             string cmd = "";
             int delay = 0;
             int repeat = 0;
-            bool startRepeat = false;
 
             if (args == 1)
             {
@@ -149,91 +169,124 @@ namespace RemotingSample {
                         }
                     }
 
-                    Console.WriteLine(l);
-                    
+                    int sent = 0;
 
-                    switch (cmd)
+                    while (sent == 0)
                     {
-                        case "add":
-                            obj.add(field_list);
-                            if (repeat > 0)
+
+                        try
+                        {
+                            switch (cmd)
                             {
-                                field_list2.Add(field_list);
-                                cmds.Add(cmd);
+                                case "add":
+                                    obj.add(field_list);
+                                    if (repeat > 0)
+                                    {
+                                        field_list2.Add(field_list);
+                                        cmds.Add(cmd);
+                                    }
+                                    sent = 1;
+                                    break;
+                                case "read":
+                                    lField = obj.readTuple(field_list);
+                                    if (repeat > 0)
+                                    {
+                                        field_list2.Add(field_list);
+                                        cmds.Add(cmd);
+                                    }
+                                    while (lField == null)
+                                        lField = obj.readTuple(field_list);
+                                    foreach (List<Field> ls in lField)
+                                        foreach (Field f in ls)
+                                        {
+                                            if (f.getType() == 0 || f.getType() == 2)
+                                                Console.WriteLine(f.getClassName());
+                                            else
+                                                Console.WriteLine(f.getString());
+
+                                        }
+                                    sent = 1;
+                                    break;
+                                case "take":
+                                    if (repeat > 0)
+                                    {
+                                        field_list2.Add(field_list);
+                                        cmds.Add(cmd);
+                                    }
+                                    lField = obj.take(field_list);
+                                    while (lField == null)
+                                        lField = obj.take(field_list);
+                                    foreach (List<Field> ls in lField)
+                                        foreach (Field f in ls)
+                                        {
+                                            if (f.getType() == 0 || f.getType() == 2)
+                                                Console.WriteLine(f.getClassName());
+                                            else
+                                                Console.WriteLine(f.getString());
+
+                                        }
+                                    sent = 1;
+                                    break;
+
+                                case "wait":
+                                    Int32.TryParse(str_fields, out delay);
+                                    System.Threading.Thread.Sleep(delay);
+                                    if (repeat > 0)
+                                    {
+                                        List<string> x = new List<string>();
+                                        x.Add(str_fields);
+                                        field_list2.Add(x);
+                                        cmds.Add(cmd);
+                                    }
+                                    sent = 1;
+                                    break;
+                                case "begin-repeat":
+                                    Int32.TryParse(str_fields, out repeat);
+                                    sent = 1;
+                                    break;
+                                case "end-repeat":
+                                    for (int i = 0; i < (repeat - 1); i++)
+                                    {
+                                        repeatCmd(obj, field_list2, cmds);
+                                    }
+                                    repeat = 0;
+                                    sent = 1;
+
+                                    break;
                             }
-                            break;
-                        case "read":
-                            lField = obj.readTuple(field_list);
-                            if (repeat > 0)
+                        }
+                        catch (Exception e)
+                        {
+                            if (e is RemotingException || e is SocketException)
                             {
-                                field_list2.Add(field_list);
-                                cmds.Add(cmd);
-                            }
-                            while (lField==null)
-                                lField = obj.readTuple(field_list);
-                            foreach (List<Field> ls in lField)
-                                foreach (Field f in ls)
+                                Thread.Sleep(7000);
+                                urlRead++;
+                                Console.WriteLine("SERVER CRASHED, REPLACING obj");
+                                String reference = "";
+                                bool set = false;
+                                while(!set)
                                 {
-                                    if (f.getType() == 0 || f.getType() == 2)
-                                        Console.WriteLine(f.getClassName());
+                                    reference = "tcp://localhost:" + urls[urlRead].Port + "/MyRemoteObjectName";
+                                    obj = (MyRemoteInterface)Activator.GetObject(
+                                    typeof(MyRemoteInterface), reference);
+                                    Console.WriteLine("TTTTTT  " + reference);
+                                    if (obj == null)
+                                    {
+                                        urlRead++;
+                                        continue;
+                                    }
                                     else
-                                        Console.WriteLine(f.getString());
-
+                                    {
+                                        set = true;
+                                        Console.WriteLine("olaaaaaa");
+                                        break;
+                                    }
                                 }
-                            break;
-                        case "take":
-                            if (repeat > 0)
-                            {
-                                field_list2.Add(field_list);
-                                cmds.Add(cmd);
                             }
-                            lField = obj.take(field_list);
-                            while (lField == null)
-                                lField = obj.take(field_list);
-                            foreach (List<Field> ls in lField)
-                                foreach (Field f in ls)
-                                {
-                                    if (f.getType() == 0 || f.getType() == 2)
-                                        Console.WriteLine(f.getClassName());
-                                    else
-                                        Console.WriteLine(f.getString());
 
-                                }
-                            break;
-
-                        case "wait":
-                            Int32.TryParse(str_fields, out delay);
-                            System.Threading.Thread.Sleep(delay);
-                            Console.WriteLine(delay);
-                            if (repeat > 0)
-                            {
-                                List<string> x = new List<string>();
-                                x.Add(str_fields);
-                                field_list2.Add(x);
-                                cmds.Add(cmd);
-                            }
-                            break;
-                        case "begin-repeat":
-                            Int32.TryParse(str_fields, out repeat);
-                            break;
-                        case "end-repeat":
-                            int v = 0;
-                            foreach (List<string> ls in field_list2)
-                            {
-                                Console.WriteLine("TTT   "+cmds[v]);
-                                foreach (string s in ls)
-                                    Console.WriteLine("HHHH   " + s);
-                                Console.WriteLine("TT222T");
-                                v++;
-                            }
-                            for (int i = 0; i < (repeat - 1); i++)
-                            {
-                                Console.WriteLine(i + "    GFggg");
-                                repeatCmd(obj, field_list2, cmds);
-                            }
-                            repeat = 0;
-                            break;
+                        }
                     }
+                    sent = 0;
                 }
             }
             else

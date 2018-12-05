@@ -18,8 +18,11 @@ namespace PuppetMaster
     class PuppetMaster
     {
         private IDictionary<string, Server> servers = new Dictionary<string, Server>();
+        private IDictionary<string, Server> serversCrashed = new Dictionary<string, Server>();
         private IDictionary<string, Client> clients = new Dictionary<string, Client>();
-        
+        private List<Uri> urls = new List<Uri>();
+        private int numServers = 0;
+
         public void setServers(IDictionary<string, Server> s) {
             servers = s;
         }
@@ -29,14 +32,42 @@ namespace PuppetMaster
             clients = c;
         }
 
+        public void setUrls(List<Uri> l)
+        {
+            urls = l;
+        }
+
+        public IDictionary<string, Server> getServers()
+        {
+            return servers;
+        }
+
+        public IDictionary<string, Client> getClients()
+        {
+            return clients;
+        }
+
+        public List<Uri> getUrls()
+        {
+            return urls;
+        }
+
+        private void setNumS(int n)
+        {
+            numServers = n;
+        }
+
+        private int getNumS()
+        {
+            return numServers;
+        }
+
         PuppetMaster() { }
 
 
 
         static void Main(string[] args)
         {
-            IDictionary<string, Server> servers = new Dictionary<string, Server>();
-            IDictionary<string, Client> clients = new Dictionary<string, Client>();
 
             PuppetMaster p = new PuppetMaster();
 
@@ -50,13 +81,13 @@ namespace PuppetMaster
                 string[] lines = File.ReadAllLines(args[0]);
                 foreach (string l in lines)
                 {
-                    bad = execute(l, servers, clients);
-                    if (bad == 1)
-                        Console.WriteLine("bad format");
-                    else
+                    try
                     {
-                        p.setServers(servers);
-                        p.setClients(clients);
+                        p = execute(l, p);
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("try again");
                     }
 
                 }
@@ -70,23 +101,23 @@ namespace PuppetMaster
                 if (l.Length == 0)
                     continue;
 
-                bad = execute(l, servers, clients);
-                if (bad == 1)
-                    Console.WriteLine("bad format");
-                else
+                try
                 {
-                    p.setServers(servers);
-                    p.setClients(clients);
+                    p = execute(l, p);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("try again");
                 }
 
             }
 
         }
 
-        private static int execute(string l, IDictionary<string, Server> servers, IDictionary<string, Client> clients)
+        private static PuppetMaster execute(string l, PuppetMaster p)
         {
             int badIn = 0;
-            string id, url;
+            string id;
             Uri uri;
             string[] splited = l.Split(new char[] {' '});
             string cmd = splited[0];
@@ -99,39 +130,47 @@ namespace PuppetMaster
                         /*Compare here if the ip is the localhost is the same as requested ip, if it is executes below if not executes sendToPCS(l,ip,port)*/
 
                         id = splited[1];
-                        if (servers.ContainsKey(id))
+                        if (p.getServers().ContainsKey(id))
                         {
                             badIn = 1;
                             break;
                         }
 
                         uri = new Uri(splited[2]);
-                        url = uri.AbsolutePath;
+                        p.getUrls().Add(uri);
+                        Console.WriteLine("WEWWWWWWWWWW " + uri.Port);
                         int min_delay = Int32.Parse(splited[3]);
                         int max_delay = Int32.Parse(splited[4]);
-
-                        Server s = new Server(id, url, min_delay, max_delay);
-                        servers.Add(id, s);
+                        Server s;
+                    if (p.getNumS() > 0)
+                    {
+                        s = new Server(id, uri, min_delay, max_delay, 1);
+                        //p.getServers().ElementAt(0).Value.setReplicas(p.getNumS());
+                    }
+                    else
+                        s = new Server(id, uri, min_delay, max_delay, 0);
+                        p.getServers().Add(id, s);
+                        p.setNumS(p.getNumS() + 1);
                         Thread th = new Thread(new ThreadStart(s.executeByPuppet));
                         th.Start();
+                        
 
                     break;
 
                 case "Client":
 
                     id = splited[1];
-                    if (clients.ContainsKey(id))
+                    if (p.getClients().ContainsKey(id))
                     {
                         badIn = 1;
                         break;
                     }
 
                     uri = new Uri(splited[2]);
-                    url = uri.AbsolutePath;
                     string script = splited[3];
 
-                    Client c = new Client(id, url, script);
-                    clients.Add(id, c);
+                    Client c = new Client(id, uri, script, p.getUrls());
+                    p.getClients().Add(id, c);
                     Thread th2 = new Thread(new ThreadStart(c.executeByPuppet));
                     th2.Start();
 
@@ -140,27 +179,36 @@ namespace PuppetMaster
                     /* in this next commands, check if the ip is the same as localhost, if not need to get the information from PCS*/
 
                 case "Status":
-
-                    foreach (Server s2 in servers.Values)
+                    foreach (Server s2 in p.serversCrashed.Values)
+                        s2.status();
+                    foreach (Server s2 in p.getServers().Values)
                         s2.status();
                     break;
 
                 case "Crash":
                     id = splited[1];
-                    //if (servers.ContainsKey(id))
-                      //  servers[id].setCrash(true);
+                    if (p.getServers().ContainsKey(id))
+                    {
+                        
+                        p.setNumS(p.getNumS() - 1);
+                        p.getServers()[id].setCrash(true);
+                        p.serversCrashed.Add(id,p.getServers()[id]);
+                        p.getServers().Remove(id);
+                        p.getServers().ElementAt(0).Value.setReplicas(p.getNumS()-1);
+                    }
+
                     break;
 
                 case "Freeze":
                     id = splited[1];
-                    if (servers.ContainsKey(id))
-                        servers[id].setFreeze(true);
+                    if (p.getServers().ContainsKey(id))
+                        p.getServers()[id].setFreeze(true);
                     break;
 
                 case "Unfreeze":
                     id = splited[1];
-                    if (servers.ContainsKey(id))
-                        servers[id].setFreeze(false);
+                    if (p.getServers().ContainsKey(id))
+                        p.getServers()[id].setFreeze(false);
                     break;
 
                 case "Wait":
@@ -168,7 +216,7 @@ namespace PuppetMaster
                     System.Threading.Thread.Sleep(delay);
                     break;
             }
-            return badIn;
+            return p;
         }
 
         public void runChannel()
@@ -182,7 +230,6 @@ namespace PuppetMaster
             {
 
                 TcpClient client = listener.AcceptTcpClient();
-                int bad = 0;
 
                 //---get the incoming data through a network stream---
                 NetworkStream nwStream = client.GetStream();
@@ -230,6 +277,6 @@ namespace PuppetMaster
         }
 
     }
-    
+
 }
 

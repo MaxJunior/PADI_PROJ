@@ -69,7 +69,7 @@ namespace PCS
         {
             Console.ReadLine();
             int badIn = 0;
-            string id, url;
+            string id;
             Uri uri;
             string[] splited = l.Split(new char[] { ' ' });
             string cmd = splited[0];
@@ -87,11 +87,10 @@ namespace PCS
                     }
 
                     uri = new Uri(splited[2]);
-                    url = uri.AbsolutePath;
                     int min_delay = Int32.Parse(splited[3]);
                     int max_delay = Int32.Parse(splited[4]);
 
-                    Server s = new Server(id, url, min_delay, max_delay);
+                    Server s = new Server(id, uri, min_delay, max_delay,0);
                     servers.Add(id, s);
                     Thread th = new Thread(new ThreadStart(s.executeByPuppet));
                     th.Start();
@@ -108,10 +107,9 @@ namespace PCS
                     }
 
                     uri = new Uri(splited[2]);
-                    url = uri.AbsolutePath;
                     string script = splited[3];
 
-                    Client c = new Client(id, url, script);
+                    Client c = new Client(id, uri, script,);
                     clients.Add(id, c);
                     Thread th2 = new Thread(new ThreadStart(c.executeByPuppet));
                     th2.Start();
