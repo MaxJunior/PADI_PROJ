@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Remoting;
@@ -8,6 +9,7 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Serialization.Formatters;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RemotingSample {
 
@@ -26,8 +28,10 @@ namespace RemotingSample {
         private int changing=0;
         private int maxCount = 10;
         private int replica;
-        private int numReplicas = 0;
         TcpChannel channel;
+        UdpClient server;
+        IDictionary<string, Uri> urls = new Dictionary<string, Uri>();
+
         public Server(string id2, Uri uri2, int min, int max, int v)
         {
             id = id2;
@@ -35,10 +39,19 @@ namespace RemotingSample {
             min_delay = min;
             max_delay = max;
             replica = v;
+            server =  new UdpClient(uri.Port);
         }
 
         public Server()
         {
+        }
+
+        public void setUrls(IDictionary<string, Uri> urls2)
+        {
+            urls = urls2;
+            while (mo == null)
+                continue;
+            mo.setUrls(urls2);
         }
 
         public void setCrash(bool c)
@@ -47,12 +60,6 @@ namespace RemotingSample {
             RemotingServices.Disconnect(mo);
             channel.StopListening(mo);
             //Environment.Exit(1);
-        }
-
-        public void setReplicas(int n)
-        {
-            numReplicas = n;
-            mo.setReplicas(n);
         }
 
         public void setFreeze(bool c)
@@ -85,6 +92,64 @@ namespace RemotingSample {
             }
         }
 
+        public bool ImPrimary()
+        {
+            bool newP = false;
+            foreach(string s in urls.Keys)
+            {
+
+                if (s.Equals(id))
+                {
+                    Console.WriteLine("I AM NEW PRIMARY   " +id);
+                    foreach (string s2 in urls.Keys)
+                    {
+                        
+                        var Client = new UdpClient();
+                        var RequestData = Encoding.ASCII.GetBytes("alive");
+
+                        Client.EnableBroadcast = true;
+                        Client.Send(RequestData, RequestData.Length, new IPEndPoint(IPAddress.Broadcast, urls[s2].Port));
+                        Client.Close();
+                    }
+                    
+                    return true;
+                }
+                else
+                {
+
+                    var task = Task.Run(() =>
+                    {
+                        newP = waitNewP();
+                    });
+
+                    bool isCompletedSuccessfully = task.Wait(TimeSpan.FromSeconds(8));
+
+                    if (newP)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        Console.WriteLine("DIDNT RECEIVED FROM  " + s);
+                        continue;
+                    }
+                    
+                }
+
+                
+            }
+            return false;
+        }
+
+        public bool waitNewP()
+        {
+            var ClientEp = new IPEndPoint(IPAddress.Any, 8888);
+            var ClientRequestData = server.Receive(ref ClientEp);
+            var ClientRequest = Encoding.ASCII.GetString(ClientRequestData);
+            return true;
+        }
+
+
         public void receiveAlive()
         {      
             var autoEvent = new AutoResetEvent(false);
@@ -92,26 +157,34 @@ namespace RemotingSample {
 
             Thread th = new Thread(new ThreadStart(checking));
             th.Start();
-
             autoEvent.WaitOne();
+            th.Interrupt();
             stateTimer.Dispose();
-            RemotingServices.Marshal(mo,
-                 "MyRemoteObjectName",
-                 typeof(MyRemoteObject));
-            replica = 0;
-            sendAlive();
+            autoEvent.Close();
+
+            if (!ImPrimary())
+            {
+                changing = 0;
+                receivedAlive = true;
+                receiveAlive();
+            }
+            else
+            {
+                mo.setPrimary(0);
+                replica = 0;
+                sendAlive();
+            }
         }
 
         public void checking()
         {
-            var Server = new UdpClient(8888);
 
             while (true)
             {
                 if (changing == 1)
                     break;
                 var ClientEp = new IPEndPoint(IPAddress.Any, 8888);
-                var ClientRequestData = Server.Receive(ref ClientEp);
+                var ClientRequestData = server.Receive(ref ClientEp);
                 var ClientRequest = Encoding.ASCII.GetString(ClientRequestData);
 
                 Console.WriteLine("Im server {0} and Recived {1} from {2}", id, ClientRequest, ClientEp.Address.ToString());
@@ -139,7 +212,6 @@ namespace RemotingSample {
         {
             var autoEvent = new AutoResetEvent(false);
             var stateTimer = new Timer(sendStatus, autoEvent, 1000, 500);
-            Console.WriteLine("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE  " + numReplicas);
             while (true)
             {
                 if (crash)
@@ -191,13 +263,17 @@ namespace RemotingSample {
 
             if (invokeCount == maxCount)
             {
-                Console.WriteLine("Im server {0} and im am sending alive broadcast {1}", id, DateTime.Now.ToString("h:mm:ss.fff"));
-                var Client = new UdpClient();
-                var RequestData = Encoding.ASCII.GetBytes("alive");
+                foreach(string s in urls.Keys) {
+                    if (urls[s].Port.Equals(uri.Port))
+                        continue;
+                    Console.WriteLine("Im server {0} and im am sending alive broadcast {1} to " + s + " " + urls[s].Port, id, DateTime.Now.ToString("h:mm:ss.fff"));
+                    var Client = new UdpClient();
+                    var RequestData = Encoding.ASCII.GetBytes("alive");
 
-                Client.EnableBroadcast = true;
-                Client.Send(RequestData, RequestData.Length, new IPEndPoint(IPAddress.Broadcast, 8888));
-                Client.Close();
+                    Client.EnableBroadcast = true;
+                    Client.Send(RequestData, RequestData.Length, new IPEndPoint(IPAddress.Broadcast, urls[s].Port));
+                    Client.Close();
+                }
                 // Reset the counter and signal the waiting thread.
                 invokeCount = 0;
                 autoEvent.Set();
@@ -213,6 +289,7 @@ namespace RemotingSample {
             
             provider.TypeFilterLevel = TypeFilterLevel.Full;
             IDictionary props = new Hashtable();
+            string name = "s";
             int port = 8086;
             if (uri != null)
             {
@@ -221,23 +298,30 @@ namespace RemotingSample {
             }
             else
                 props["port"] = 8086;
-            if (id!=null)
+            if (id != null) {
                 props["name"] = id;
+                name = id;
+            }
             channel = new TcpChannel(props, null, provider);
             //String reference = "tcp://" + GetIPAddress() + ":" + port + "/MyRemoteObjectName";    
-            mo = new MyRemoteObject();
-            
+           
             if (replica==0) {
+                mo = new MyRemoteObject(min_delay, max_delay, uri,0);
+                Console.WriteLine(uri.ToString());
                 RemotingServices.Marshal(mo,
-                 "MyRemoteObjectName",
-                 typeof(MyRemoteObject));
+                     "MyRemoteObjectName/" + name,
+                     typeof(MyRemoteObject));
                 maxCount = 8;
                 sendAlive();
-                Console.WriteLine("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR");
             }
             else
             {
-                
+                mo = new MyRemoteObject(min_delay, max_delay, uri,1);
+                Console.WriteLine(uri.ToString());
+                RemotingServices.Marshal(mo,
+                     "MyRemoteObjectName/" + name,
+                     typeof(MyRemoteObject));
+
                 receiveAlive();     
             }
             

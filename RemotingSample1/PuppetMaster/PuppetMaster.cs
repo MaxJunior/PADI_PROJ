@@ -21,6 +21,8 @@ namespace PuppetMaster
         private IDictionary<string, Server> serversCrashed = new Dictionary<string, Server>();
         private IDictionary<string, Client> clients = new Dictionary<string, Client>();
         private List<Uri> urls = new List<Uri>();
+        private static List<string> names = new List<string>();
+        IDictionary<string, Uri> urlsD = new Dictionary<string, Uri>();
         private int numServers = 0;
 
         public void setServers(IDictionary<string, Server> s) {
@@ -37,6 +39,16 @@ namespace PuppetMaster
             urls = l;
         }
 
+        public IDictionary<string, Uri> getUrlsD()
+        {
+            return urlsD;
+        }
+
+        public void setNames(List<string> l)
+        {
+            names = l;
+        }
+
         public IDictionary<string, Server> getServers()
         {
             return servers;
@@ -50,6 +62,11 @@ namespace PuppetMaster
         public List<Uri> getUrls()
         {
             return urls;
+        }
+
+        public List<string> getNames()
+        {
+            return names;
         }
 
         private void setNumS(int n)
@@ -74,7 +91,6 @@ namespace PuppetMaster
 
             Thread ch = new Thread(new ThreadStart(p.runChannel));
             ch.Start();
-            int bad = 0;
 
             if (args.Length == 1)
             {
@@ -85,9 +101,14 @@ namespace PuppetMaster
                     {
                         p = execute(l, p);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        
                         Console.WriteLine("try again");
+                        Console.WriteLine(l);
+                        Console.WriteLine(e.GetType());
+                        Console.WriteLine(e.StackTrace);
+                        Console.ReadLine();
                     }
 
                 }
@@ -116,7 +137,6 @@ namespace PuppetMaster
 
         private static PuppetMaster execute(string l, PuppetMaster p)
         {
-            int badIn = 0;
             string id;
             Uri uri;
             string[] splited = l.Split(new char[] {' '});
@@ -132,29 +152,36 @@ namespace PuppetMaster
                         id = splited[1];
                         if (p.getServers().ContainsKey(id))
                         {
-                            badIn = 1;
                             break;
                         }
 
                         uri = new Uri(splited[2]);
                         p.getUrls().Add(uri);
-                        Console.WriteLine("WEWWWWWWWWWW " + uri.Port);
+                        p.getNames().Add(id);
+                        p.getUrlsD().Add(id, uri); 
                         int min_delay = Int32.Parse(splited[3]);
                         int max_delay = Int32.Parse(splited[4]);
                         Server s;
+                    
                     if (p.getNumS() > 0)
                     {
+                        Console.WriteLine("WEWWWWWWWWWW " + p.getNumS());
                         s = new Server(id, uri, min_delay, max_delay, 1);
-                        //p.getServers().ElementAt(0).Value.setReplicas(p.getNumS());
                     }
                     else
                         s = new Server(id, uri, min_delay, max_delay, 0);
-                        p.getServers().Add(id, s);
-                        p.setNumS(p.getNumS() + 1);
-                        Thread th = new Thread(new ThreadStart(s.executeByPuppet));
-                        th.Start();
+                    p.getServers().Add(id, s);
+                    p.setNumS(p.getNumS() + 1);
+                    Thread th = new Thread(new ThreadStart(s.executeByPuppet));
+                    th.Start();
+                    foreach (Server s2 in p.getServers().Values)
+                    {
+                        s2.setUrls(p.getUrlsD());
+                    }
+                    
+                    
                         
-
+                    
                     break;
 
                 case "Client":
@@ -162,14 +189,13 @@ namespace PuppetMaster
                     id = splited[1];
                     if (p.getClients().ContainsKey(id))
                     {
-                        badIn = 1;
                         break;
                     }
 
                     uri = new Uri(splited[2]);
                     string script = splited[3];
 
-                    Client c = new Client(id, uri, script, p.getUrls());
+                    Client c = new Client(id, uri, script, p.getUrls(), p.getNames());
                     p.getClients().Add(id, c);
                     Thread th2 = new Thread(new ThreadStart(c.executeByPuppet));
                     th2.Start();
@@ -194,7 +220,6 @@ namespace PuppetMaster
                         p.getServers()[id].setCrash(true);
                         p.serversCrashed.Add(id,p.getServers()[id]);
                         p.getServers().Remove(id);
-                        p.getServers().ElementAt(0).Value.setReplicas(p.getNumS()-1);
                     }
 
                     break;

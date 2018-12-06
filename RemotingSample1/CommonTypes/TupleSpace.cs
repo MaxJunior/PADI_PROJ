@@ -20,18 +20,22 @@ namespace RemotingSample
         bool freeze = false;
         private int max_delay;
         private int min_delay;
-        private int numReplicas = 0;
-
-        public void setReplicas(int n)
-        {
-            numReplicas = n;
-        }
+        IDictionary<string, Uri> urls = new Dictionary<string, Uri>();
+        private Uri uri;
+        private int replica = 0;
 
         public MyRemoteObject() { }
 
-        public MyRemoteObject(int min, int max) {
+        public void setUrls(IDictionary<string, Uri> urls2)
+        {
+            urls = new Dictionary<string, Uri>(urls2);
+        }
+
+        public MyRemoteObject(int min, int max, Uri uri2, int rep) {
             min_delay = min;
             max_delay = max;
+            uri = uri2;
+            replica = rep;
         }
 
         public void setCrash(bool c)
@@ -98,6 +102,10 @@ namespace RemotingSample
             return schemas;
         }
 
+        public void setPrimary(int v)
+        {
+            replica = v;
+        }
 
         [MethodImpl(MethodImplOptions.Synchronized)]
         public void add(List<string> l)
@@ -167,7 +175,7 @@ namespace RemotingSample
             }
             writeSchemaToFile(key, l);
 
-            if (numReplicas != 0)
+            if(replica==0)
                 updateReplicas(l, "add");
 
 
@@ -175,53 +183,59 @@ namespace RemotingSample
 
         public void updateReplicas(List<string> l, string op)
         {
-            var Server = new UdpClient(8887);
-            var Client = new UdpClient();
-            string message = op + " ";
-            foreach (string s in l) {
-                message += s + " ";
-            }
-            var RequestData = Encoding.ASCII.GetBytes(message);
-            Client.EnableBroadcast = true;
-            Client.Send(RequestData, RequestData.Length, new IPEndPoint(IPAddress.Broadcast, 8887));
-            Client.Close();
-            int received = 0;
-            while (received < numReplicas)
+            List<string> serversDown = new List<string>();
+            Console.WriteLine("IM OBJECT   " + uri.Port + "and im updating:");
+            foreach(string s in urls.Keys)
             {
-                var ClientEp = new IPEndPoint(IPAddress.Any, 8887);
-                var ClientRequestData = Server.Receive(ref ClientEp);
-                var ClientRequest = Encoding.ASCII.GetString(ClientRequestData);
-                if (ClientRequest.Equals("ok")) ;
-                received++;
+                Console.WriteLine("Server   " + s);
             }
+            foreach (string s in urls.Keys)
+            {
+                try
+                {
+                    if (urls[s].Equals(uri))
+                    {
+                        continue;   
+                    }       
+                    String reference = "tcp://localhost:" + urls[s].Port + "/MyRemoteObjectName/" + s;   
+                    MyRemoteInterface obj = (MyRemoteInterface)Activator.GetObject(
+                    typeof(MyRemoteInterface), reference);
+
+                    int i = obj.update(l, op);
+
+                    if (i == 1)
+                        continue;
+                }
+                catch (Exception e)
+                {
+                    if (e is RemotingException || e is SocketException)
+                    {
+                        serversDown.Add(s);
+
+                    }
+
+                }
+            }
+            foreach (string down in serversDown)
+                urls.Remove(down);
         }
 
-        public void update()
+        public int update(List<string> l, string op)
         {
-            var Server = new UdpClient(8887);
-            var ClientEp = new IPEndPoint(IPAddress.Any, 8887);
-            var ClientRequestData = Server.Receive(ref ClientEp);
-            var ClientRequest = Encoding.ASCII.GetString(ClientRequestData);
-            string[] splited = ClientRequest.Split(new char[] {' '});
-            string op = splited[0];
-            List<string> l = new List<string>();
-            foreach (string s in splited)
-            {
-                l.Add(s);
-            }
-            l.Remove(op);
+            Console.WriteLine("IM OBJECT   " + uri.Port + "and receivced update " + op);
+
             if (op.Equals("add"))
+            {
                 add(l);
-            else
+                return 1;
+            }
+            else if (op.Equals("take"))
+            {
                 take(l);
+                return 1;
+            }
 
-            var Client = new UdpClient();
-            var RequestData = Encoding.ASCII.GetBytes("ok");
-            Client.EnableBroadcast = true;
-            Client.Send(RequestData, RequestData.Length, new IPEndPoint(IPAddress.Broadcast, 8887));
-            Client.Close();
-
-
+            return 0;
 
         }
 
@@ -477,7 +491,7 @@ namespace RemotingSample
             }
             if (founded == 1)
             {
-                if (numReplicas != 0)
+                if(replica==0)
                     updateReplicas(l, "take");
                 return aux2;
             }
@@ -685,6 +699,8 @@ namespace RemotingSample
         void add(List<string> l);
         List<List<Field>> readTuple(List<string> l);
         List<List<Field>> take(List<string> l);
+
+        int update(List<string> l, string op);
 
 
     }

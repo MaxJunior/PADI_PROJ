@@ -109,7 +109,7 @@ namespace PCS
                     uri = new Uri(splited[2]);
                     string script = splited[3];
 
-                    Client c = new Client(id, uri, script,);
+                    Client c = new Client(id, uri, script, new List<Uri>());
                     clients.Add(id, c);
                     Thread th2 = new Thread(new ThreadStart(c.executeByPuppet));
                     th2.Start();

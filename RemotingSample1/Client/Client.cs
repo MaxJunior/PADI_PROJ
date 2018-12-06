@@ -18,20 +18,20 @@ namespace RemotingSample {
     public class Client
     {
 
-        private string name;
+        private string id;
         private Uri uri;
         private string fileName;
-        private TcpChannel channel;
         bool crash = false;
         private static List<Uri> urls;
-        private static int urlRead = 0;
+        private static List<string> names;
 
-        public Client(string n, Uri uri2, string file, List<Uri> urls2)
+        public Client(string n, Uri uri2, string file, List<Uri> urls2, List<string> names2)
         {
-            name = n;
+            id = n;
             fileName = file;
             uri = uri2;
-            urls = urls2;
+            urls = new List<Uri>(urls2);
+            names = names2;
         }
 
         public void setCrash(bool c)
@@ -41,22 +41,37 @@ namespace RemotingSample {
 
         public void executeByPuppet()
         {
+            int urlRead = 0;
             BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
             provider.TypeFilterLevel = TypeFilterLevel.Full;
             IDictionary props = new Hashtable();
-            props["port"] = 0;
-            props["name"] = name;
-            //props["ip"] = "1.2.3.4";
+            string name = "s";
+            int port = 8086;
+            if (uri != null)
+            {
+                props["port"] = uri.Port;
+                port = uri.Port;
+            }
+            else
+                props["port"] = 8086;
+            if (id != null)
+            {
+                props["name"] = id;
+                name = id;
+            }
             TcpChannel channel = new TcpChannel(props, null, provider);
             ChannelServices.RegisterChannel(channel, false);
-            String reference = "tcp://localhost:" + urls[urlRead].Port +"/MyRemoteObjectName";
-            Console.WriteLine("TTTTTT  " + reference);
-            MyRemoteInterface obj = (MyRemoteInterface)Activator.GetObject(
-            typeof(MyRemoteInterface),reference);
-          
-            if (obj == null)
-                System.Console.WriteLine("Could not locate server");
-            executeMain(obj, 1, fileName);
+            MyRemoteInterface obj=null;
+            while (obj == null)
+            {
+                String reference = "tcp://localhost:" + urls[urlRead].Port + "/MyRemoteObjectName/" + names[urlRead];
+                obj = (MyRemoteInterface)Activator.GetObject(
+                typeof(MyRemoteInterface), reference);
+                if (obj == null)
+                    urlRead++;
+
+            }
+            executeMain(obj, 1, fileName, urlRead);
             
         }
         public static string GetIPAddress()
@@ -77,9 +92,9 @@ namespace RemotingSample {
         public void status()
         {
             if (crash)
-                Console.WriteLine("Client " + name + " crashed status");
+                Console.WriteLine("Client " + id + " crashed status");
             else
-                Console.WriteLine("Client " + name + " available");
+                Console.WriteLine("Client " + id + " available");
         }
 
         public static void repeatCmd(MyRemoteInterface obj, List<List<string>> field_list2, List<string> cmds)
@@ -132,7 +147,7 @@ namespace RemotingSample {
             }
         }
 
-        public static void executeMain(MyRemoteInterface obj, int args,string arg)
+        public static void executeMain(MyRemoteInterface obj, int args,string arg, int urlRead)
         {
             string str_fields = "";
             List<string> cmds = new List<string>();
@@ -261,15 +276,15 @@ namespace RemotingSample {
                             {
                                 Thread.Sleep(7000);
                                 urlRead++;
-                                Console.WriteLine("SERVER CRASHED, REPLACING obj");
+                                Console.WriteLine("SERVER CRASHED, REPLACING REMOTE OBJECT");
                                 String reference = "";
                                 bool set = false;
                                 while(!set)
                                 {
-                                    reference = "tcp://localhost:" + urls[urlRead].Port + "/MyRemoteObjectName";
+                                    reference = "tcp://localhost:" + urls[urlRead].Port + "/MyRemoteObjectName/" + names[urlRead];
                                     obj = (MyRemoteInterface)Activator.GetObject(
                                     typeof(MyRemoteInterface), reference);
-                                    Console.WriteLine("TTTTTT  " + reference);
+                                    Console.WriteLine("Trying:  " + reference);
                                     if (obj == null)
                                     {
                                         urlRead++;
@@ -278,7 +293,6 @@ namespace RemotingSample {
                                     else
                                     {
                                         set = true;
-                                        Console.WriteLine("olaaaaaa");
                                         break;
                                     }
                                 }
@@ -354,12 +368,12 @@ namespace RemotingSample {
                 catch (ArgumentOutOfRangeException)
                 {
                     System.Console.WriteLine("bad input format1\nadd|take|read <field1,field2,...,fieldn>\nEx: add <\"ola\">");
-                    executeMain(obj, args, arg);
+                    executeMain(obj, args, arg,urlRead);
                 }
                 catch (IndexOutOfRangeException)
                 {
                     System.Console.WriteLine("bad input format2\nadd|take|read <field1,field2,...,fieldn>\nEx: add <\"ola\">");
-                    executeMain(obj, args, arg);
+                    executeMain(obj, args, arg,urlRead);
                 }
             }
             
@@ -374,15 +388,15 @@ namespace RemotingSample {
             ChannelServices.RegisterChannel(channel, false);
             MyRemoteInterface obj = (MyRemoteInterface)Activator.GetObject(
             typeof(MyRemoteInterface),
-            "tcp://localhost:8086/MyRemoteObjectName");
+            "tcp://localhost:8086/MyRemoteObjectName/s");
             if (obj == null)
                 System.Console.WriteLine("Could not locate server");
 
             if (args.Length == 0)
-                executeMain(obj, 0, "");
+                executeMain(obj, 0, "",0);
             else if (args.Length == 0)
             {
-                executeMain(obj, 1, args[0]);
+                executeMain(obj, 1, args[0],0);
             }
             else
                 return;
